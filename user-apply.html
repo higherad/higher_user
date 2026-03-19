@@ -253,7 +253,6 @@
 
       <!-- 운영 기간 -->
       <div class="form-section">
-        <div class="form-section-title">운영 기간</div>
         <div class="form-row">
           <div class="form-field">
             <label><span class="required-dot"></span> 일 수</label>
@@ -349,7 +348,7 @@
       <div class="template-box">
         <div class="t-text">
           <strong>엑셀 양식 컬럼 순서</strong><br>
-          업체명 / 업체URL / 업체MID번호 / 순위키워드 / 일수 / 시작일 / 일목표개수(선택)
+          업체명 / 업체URL / 업체MID번호 / 순위키워드 / 일수 / 시작일 / 일목표
         </div>
         <button class="btn-template" onclick="downloadTemplate()">양식 다운로드</button>
       </div>
@@ -383,6 +382,7 @@
                 <th>MID</th>
                 <th>순위키워드</th>
                 <th>일수</th>
+                <th>일목표</th>
                 <th>시작일</th>
                 <th>상태</th>
               </tr>
@@ -710,6 +710,7 @@
         <td style="color:var(--text2)">${r.mid || '-'}</td>
         <td>${r.rankKeyword || '-'}</td>
         <td style="color:var(--text2)">${r.days}일</td>
+        <td style="color:var(--text2)">${r.dailyTarget ? r.dailyTarget.toLocaleString() : '-'}</td>
         <td style="color:var(--text2)">${r.startDate}</td>
         <td>${r.valid
           ? '<span class="row-status row-ok">정상</span>'
@@ -754,6 +755,8 @@
           mid:         row.mid,
           startDate:   row.startDate,
           endDate:     row.endDate,
+          days:        row.days,
+          dailyTarget: row.dailyTarget,
           workKeyword: '',
           memo:        '',
         });
