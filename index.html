@@ -23,12 +23,9 @@
     .login-logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); animation:pulse 2s ease-in-out infinite; }
     @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:.6} }
     .login-sub { font-size:13px; color:var(--text2); margin-top:8px; letter-spacing:.3px; }
-
-    /* 탭 */
     .tab-bar { display:flex; background:#f1f5f9; border-radius:10px; padding:4px; margin-bottom:24px; }
     .tab-btn { flex:1; padding:9px; border:none; border-radius:7px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; background:transparent; color:var(--text2); transition:.2s; }
     .tab-btn.active { background:#fff; color:var(--text); box-shadow:0 1px 4px rgba(0,0,0,.08); }
-
     .login-card { background:#fff; border:1px solid var(--border); border-radius:20px; padding:32px 40px 40px; box-shadow:0 4px 40px rgba(0,0,0,.06); }
     .field-group { margin-bottom:16px; }
     .field-label { display:block; font-size:12px; font-weight:700; color:var(--text2); margin-bottom:7px; letter-spacing:.3px; text-transform:uppercase; }
@@ -44,11 +41,6 @@
     .login-btn:hover { background:var(--accent2); box-shadow:0 6px 20px rgba(16,185,129,.35); }
     .login-btn:active { transform:scale(.98); }
     .login-btn:disabled { background:var(--muted); box-shadow:none; cursor:not-allowed; }
-    .divider { display:flex; align-items:center; gap:12px; margin:20px 0 16px; color:var(--muted); font-size:12px; }
-    .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
-    .admin-link { text-align:center; font-size:12px; color:var(--text2); }
-    .admin-link a { color:var(--accent); font-weight:600; text-decoration:none; }
-    .admin-link a:hover { text-decoration:underline; }
     .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .6s linear infinite; margin-right:8px; vertical-align:middle; }
     @keyframes spin { to{transform:rotate(360deg)} }
     .field-hint { font-size:11px; color:var(--muted); margin-top:4px; }
@@ -70,7 +62,6 @@
   </div>
 
   <div class="login-card">
-    <!-- 탭 -->
     <div class="tab-bar">
       <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">로그인</button>
       <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">회원가입</button>
@@ -88,11 +79,6 @@
       </div>
       <div class="error-msg" id="login-error"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">로그인</button>
-
-      <div class="divider">또는</div>
-      <div class="admin-link">
-        관리자이신가요? <a href="index.html">어드민 페이지로 이동</a>
-      </div>
     </div>
 
     <!-- 회원가입 탭 -->
@@ -124,11 +110,10 @@
 <script type="module">
   import HA from './ha-store.js';
 
-  // 이미 로그인된 경우 바로 이동
+  // 이미 로그인된 경우 바로 이동 (member 역할만)
   const cur = HA.getCurrentUser();
-  if (cur && cur.role !== 'admin') location.href = 'user-dashboard.html';
+  if (cur && cur.role === 'member') location.href = 'user-dashboard.html';
 
-  // ── 탭 전환 ───────────────────────────────────────────────
   window.switchTab = function(tab) {
     ['login','signup'].forEach(t => {
       document.getElementById('content-'+t).classList.toggle('active', t===tab);
@@ -136,18 +121,10 @@
     });
   };
 
-  // ── Enter 키 처리 ─────────────────────────────────────────
-  document.getElementById('inp-pw').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
-  document.getElementById('inp-id').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('inp-pw').focus();
-  });
-  document.getElementById('su-pw2').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doSignup();
-  });
+  document.getElementById('inp-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('inp-id').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inp-pw').focus(); });
+  document.getElementById('su-pw2').addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
 
-  // 입력 시 에러 초기화
   ['inp-id','inp-pw'].forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
       document.getElementById('login-error').classList.remove('show');
@@ -155,7 +132,6 @@
     });
   });
 
-  // ── 로그인 ────────────────────────────────────────────────
   window.doLogin = async function() {
     const username = document.getElementById('inp-id').value.trim();
     const password = document.getElementById('inp-pw').value;
@@ -163,11 +139,6 @@
 
     if (!username || !password) {
       document.getElementById('login-error').textContent = '아이디와 비밀번호를 모두 입력해주세요.';
-      document.getElementById('login-error').classList.add('show');
-      return;
-    }
-    if (username === 'admin') {
-      document.getElementById('login-error').textContent = '관리자 계정은 어드민 페이지를 이용해주세요.';
       document.getElementById('login-error').classList.add('show');
       return;
     }
@@ -190,47 +161,28 @@
     }
   };
 
-  // ── 회원가입 ──────────────────────────────────────────────
   window.doSignup = async function() {
-    const username = document.getElementById('su-id').value.trim();
-    const password = document.getElementById('su-pw').value;
+    const username  = document.getElementById('su-id').value.trim();
+    const password  = document.getElementById('su-pw').value;
     const password2 = document.getElementById('su-pw2').value;
-    const agency   = document.getElementById('su-agency').value.trim();
-    const errEl    = document.getElementById('signup-error');
-    const sucEl    = document.getElementById('signup-success');
-    const btn      = document.getElementById('signup-btn');
+    const agency    = document.getElementById('su-agency').value.trim();
+    const errEl     = document.getElementById('signup-error');
+    const sucEl     = document.getElementById('signup-success');
+    const btn       = document.getElementById('signup-btn');
 
     errEl.classList.remove('show');
     sucEl.classList.remove('show');
 
-    // 유효성 검사
-    if (!username || !password) {
-      errEl.textContent = '아이디와 비밀번호를 입력해주세요.';
-      errEl.classList.add('show'); return;
-    }
-    if (username.length < 4) {
-      errEl.textContent = '아이디는 4자 이상 입력해주세요.';
-      errEl.classList.add('show'); return;
-    }
-    if (password.length < 6) {
-      errEl.textContent = '비밀번호는 6자 이상 입력해주세요.';
-      errEl.classList.add('show'); return;
-    }
-    if (password !== password2) {
-      errEl.textContent = '비밀번호가 일치하지 않습니다.';
-      errEl.classList.add('show'); return;
-    }
-    if (username === 'admin') {
-      errEl.textContent = '사용할 수 없는 아이디입니다.';
-      errEl.classList.add('show'); return;
-    }
+    if (!username || !password) { errEl.textContent = '아이디와 비밀번호를 입력해주세요.'; errEl.classList.add('show'); return; }
+    if (username.length < 4)    { errEl.textContent = '아이디는 4자 이상 입력해주세요.';    errEl.classList.add('show'); return; }
+    if (password.length < 6)    { errEl.textContent = '비밀번호는 6자 이상 입력해주세요.';  errEl.classList.add('show'); return; }
+    if (password !== password2)  { errEl.textContent = '비밀번호가 일치하지 않습니다.';       errEl.classList.add('show'); return; }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>처리 중...';
 
     try {
-      // 중복 아이디 확인
-      const users = await HA.getUsers();
+      const users  = await HA.getUsers();
       const exists = users.find(u => u.username === username);
       if (exists) {
         errEl.textContent = '이미 사용 중인 아이디입니다.';
@@ -240,24 +192,21 @@
         return;
       }
 
-      // 회원 등록
       await HA.addUser({ username, password, agency, unitPrice: 0 });
 
-      sucEl.textContent = '회원가입이 완료되었습니다! 로그인해주세요.';
+      sucEl.textContent = '회원가입이 완료되었습니다! 관리자 승인 후 로그인 가능합니다.';
       sucEl.classList.add('show');
       btn.disabled = false;
       btn.textContent = '회원가입';
 
-      // 3초 후 로그인 탭으로 이동
       setTimeout(() => {
         document.getElementById('su-id').value = '';
         document.getElementById('su-pw').value = '';
         document.getElementById('su-pw2').value = '';
         document.getElementById('su-agency').value = '';
-        document.getElementById('inp-id').value = username;
         sucEl.classList.remove('show');
         switchTab('login');
-      }, 2000);
+      }, 2500);
 
     } catch (err) {
       errEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
