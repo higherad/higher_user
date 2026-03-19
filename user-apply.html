@@ -152,7 +152,7 @@
   <!-- 탭 선택 -->
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-single" onclick="switchMode('single')">
-      <i data-lucide="file-plus" size="14" style="vertical-align:middle;margin-right:5px"></i> 단건 신청
+      <i data-lucide="file-plus" size="14" style="vertical-align:middle;margin-right:5px"></i> 개별 신청
     </button>
     <button class="tab-btn" id="tab-excel" onclick="switchMode('excel')">
       <i data-lucide="table" size="14" style="vertical-align:middle;margin-right:5px"></i> 엑셀 일괄 업로드
@@ -256,28 +256,9 @@
         <div class="form-section-title">운영 기간</div>
         <div class="form-row">
           <div class="form-field">
-            <label><span class="required-dot"></span> 시작일</label>
-            <input id="f-startDate" type="date">
-            <div class="field-error" id="err-startDate">시작일을 선택해주세요.</div>
-          </div>
-          <div class="form-field">
-            <label><span class="required-dot"></span> 종료일</label>
-            <input id="f-endDate" type="date">
-            <div class="field-error" id="err-endDate">종료일을 선택해주세요.</div>
-          </div>
-        </div>
-        <div class="duration-btns">
-          <button type="button" class="duration-btn" onclick="setDuration(7)">7일</button>
-          <button type="button" class="duration-btn" onclick="setDuration(14)">14일</button>
-          <button type="button" class="duration-btn" onclick="setDuration(30)">30일</button>
-          <button type="button" class="duration-btn" onclick="setDuration(60)">60일</button>
-          <button type="button" class="duration-btn" onclick="setDuration(90)">90일</button>
-        </div>
-        <div class="form-row" style="margin-top:14px;">
-          <div class="form-field">
             <label><span class="required-dot"></span> 일 수</label>
-            <input id="f-days" type="number" placeholder="예: 7" min="1">
-            <div class="field-hint">운영 기간(일수)을 입력해주세요.</div>
+            <input id="f-days" type="number" placeholder="예: 7" min="1" oninput="autoCalcEndDate()">
+            <div class="field-hint">일 수 입력 시 종료일이 자동 계산됩니다.</div>
             <div class="field-error" id="err-days">일 수를 입력해주세요.</div>
           </div>
           <div class="form-field">
@@ -286,11 +267,23 @@
             <div class="field-hint">하루 목표 유입 수를 입력해주세요.</div>
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label><span class="required-dot"></span> 시작일</label>
+            <input id="f-startDate" type="date" oninput="autoCalcEndDate()">
+            <div class="field-error" id="err-startDate">시작일을 선택해주세요.</div>
+          </div>
+          <div class="form-field">
+            <label><span class="required-dot"></span> 종료일</label>
+            <input id="f-endDate" type="date">
+            <div class="field-hint">시작일과 일 수 입력 시 자동 계산됩니다.</div>
+            <div class="field-error" id="err-endDate">종료일을 선택해주세요.</div>
+          </div>
+        </div>
       </div>
 
       <!-- 메모 -->
       <div class="form-section">
-        <div class="form-section-title">추가 요청사항</div>
         <div class="form-field">
           <label>메모 / 특이사항</label>
           <textarea id="f-memo" placeholder="운영 시 참고해야 할 사항이 있으면 입력해주세요." rows="3"></textarea>
@@ -390,7 +383,6 @@
                 <th>MID</th>
                 <th>순위키워드</th>
                 <th>일수</th>
-                <th>일목표</th>
                 <th>시작일</th>
                 <th>상태</th>
               </tr>
@@ -504,13 +496,15 @@
     window.scrollTo(0,0);
   }
 
-  // ── 기간 빠른 선택 ────────────────────────────────────────
-  window.setDuration = days => {
-    const start = document.getElementById('f-startDate').value || fmt(new Date());
-    const s = new Date(start);
-    s.setDate(s.getDate() + days);
-    document.getElementById('f-endDate').value = fmt(s);
-    document.getElementById('f-days').value = days;
+  // ── 일 수 입력 시 종료일 자동 계산 ──────────────────────────
+  window.autoCalcEndDate = function() {
+    const start = document.getElementById('f-startDate').value;
+    const days  = Number(document.getElementById('f-days').value);
+    if (start && days > 0) {
+      const s = new Date(start);
+      s.setDate(s.getDate() + days);
+      document.getElementById('f-endDate').value = fmt(s);
+    }
   };
 
   // ── 유효성 검사 ───────────────────────────────────────────
@@ -523,7 +517,6 @@
       {id:'f-url',        err:'err-url'},
       {id:'f-startDate',  err:'err-startDate'},
       {id:'f-endDate',    err:'err-endDate'},
-      {id:'f-days',       err:'err-days'},
     ];
     required.forEach(({id, err}) => {
       const el = document.getElementById(id);
@@ -569,8 +562,6 @@
       ] : []),
       ['시작일', document.getElementById('f-startDate').value],
       ['종료일', document.getElementById('f-endDate').value],
-      ['일 수',  document.getElementById('f-days').value + '일'],
-      ['일 목표', document.getElementById('f-dailyTarget').value ? document.getElementById('f-dailyTarget').value + '개' : '-'],
       ['메모',   document.getElementById('f-memo').value || '-'],
     ];
     document.getElementById('confirm-content').innerHTML = `
@@ -609,8 +600,6 @@
         sellerControl: meta.showSeller  ? document.getElementById('f-sellerControl').value : '',
         startDate:     document.getElementById('f-startDate').value,
         endDate:       document.getElementById('f-endDate').value,
-        days:          Number(document.getElementById('f-days').value) || 0,
-        dailyTarget:   Number(document.getElementById('f-dailyTarget').value) || 0,
         memo:          document.getElementById('f-memo').value,
       });
       document.getElementById('step-2').style.display = 'none';
@@ -665,7 +654,8 @@
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+        // cellDates:false 로 읽어서 날짜 시리얼을 직접 처리 (인덱스 밀림 방지)
+        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
@@ -677,15 +667,16 @@
           const mid         = String(r[2] || '').trim();
           const rankKeyword = String(r[3] || '').trim();
           const days        = Number(r[4]) || 30;
+          const dailyTarget = Number(r[6]) || 0;
           let startDate     = '';
 
-          // 날짜 처리
-          if (r[5] instanceof Date) {
-            startDate = r[5].toISOString().slice(0,10);
-          } else if (typeof r[5] === 'number') {
-            // 엑셀 시리얼 날짜
+          // 날짜 처리 — cellDates:false 이므로 항상 시리얼 숫자 또는 문자열
+          if (typeof r[5] === 'number' && r[5] > 0) {
+            // 엑셀 시리얼 날짜 → JS Date (UTC 기준 보정)
             const d = new Date(Math.round((r[5] - 25569) * 86400 * 1000));
             startDate = d.toISOString().slice(0,10);
+          } else if (typeof r[5] === 'string' && r[5].includes('-')) {
+            startDate = r[5].slice(0,10);
           } else {
             startDate = fmt(new Date());
           }
@@ -695,7 +686,7 @@
           const endDate = fmt(endD);
 
           const valid = !!(storeName && url && rankKeyword && startDate);
-          return { storeName, url, mid, rankKeyword, days, startDate, endDate, valid, error: valid ? '' : '필수값 누락' };
+          return { storeName, url, mid, rankKeyword, days, dailyTarget, startDate, endDate, valid, error: valid ? '' : '필수값 누락' };
         });
 
         renderPreview();
@@ -719,7 +710,6 @@
         <td style="color:var(--text2)">${r.mid || '-'}</td>
         <td>${r.rankKeyword || '-'}</td>
         <td style="color:var(--text2)">${r.days}일</td>
-        <td style="color:var(--text2)">${r.dailyTarget ? r.dailyTarget.toLocaleString() : '-'}</td>
         <td style="color:var(--text2)">${r.startDate}</td>
         <td>${r.valid
           ? '<span class="row-status row-ok">정상</span>'
