@@ -657,6 +657,7 @@
           const mid         = String(r[2] || '').trim();
           const rankKeyword = String(r[3] || '').trim();
           const days        = Number(r[4]) || 30;
+          const dailyTarget = Number(r[6]) || 0;
           let startDate     = '';
 
           // 날짜 처리
@@ -675,7 +676,7 @@
           const endDate = fmt(endD);
 
           const valid = !!(storeName && url && rankKeyword && startDate);
-          return { storeName, url, mid, rankKeyword, days, startDate, endDate, valid, error: valid ? '' : '필수값 누락' };
+          return { storeName, url, mid, rankKeyword, days, dailyTarget, startDate, endDate, valid, error: valid ? '' : '필수값 누락' };
         });
 
         renderPreview();
@@ -743,6 +744,8 @@
           mid:         row.mid,
           startDate:   row.startDate,
           endDate:     row.endDate,
+          days:        row.days,
+          dailyTarget: row.dailyTarget,
           workKeyword: '',
           memo:        '',
         });
