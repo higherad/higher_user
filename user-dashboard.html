@@ -305,11 +305,11 @@
   </div>
 </main>
 
-<script src="ha-store.js"></script>
-<script>
+<script type="module">
+  import HA from './ha-store.js';
   // ── 인증 확인 ────────────────────────────────────────────────
   const user = HA.getCurrentUser();
-  if (!user || user.role === 'admin') location.href = 'user-login.html';
+  if (!user || user.role === 'admin') location.href = 'index.html';
 
   // ── 유저 정보 세팅 ───────────────────────────────────────────
   document.getElementById('user-name').textContent = user.username;
@@ -510,7 +510,7 @@
 
   function doLogout() {
     HA.logout();
-    location.href = 'user-login.html';
+    location.href = 'index.html';
   }
 
   // ── 초기 렌더 ────────────────────────────────────────────────
