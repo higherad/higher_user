@@ -27,11 +27,10 @@ const auth = getAuth(app);
 
 // ── DB 경로 상수 ─────────────────────────────────────────────
 const PATHS = {
-  slots:     'ha/slots',
-  users:     'ha/users',
-  notices:   'ha/notices',
-  paid:      'ha/paid_slots',
-  agencies:  'ha/agencies',
+  slots:   'ha/slots',
+  users:   'ha/users',
+  notices: 'ha/notices',
+  paid:    'ha/paid_slots',
 };
 
 // ── 텔레그램 알림 설정 ────────────────────────────────────────
@@ -232,10 +231,12 @@ ${lines}
   },
 
   async addUser(data) {
+    const agencyName = data.agency || '';
     const newUser = {
       username:   data.username   || '',
       password:   data.password   || '',
-      agency:     data.agency     || '',
+      agency:     agencyName,       // 회원 테이블의 업체명
+      agencyId:   agencyName,       // 슬롯에서 참조하는 대행사 ID와 동일한 값
       role:       'member',
       unitPrice:  Number(data.unitPrice) || 0,
       memo:       data.memo       || '',
@@ -255,41 +256,6 @@ ${lines}
   async deleteUser(key) {
     await remove(ref(db, `${PATHS.users}/${key}`));
     dispatch('ha:users:updated');
-  },
-
-  // ════════════════════════════════════════════════════════
-  // 대행사 CRUD
-  // ════════════════════════════════════════════════════════
-
-  async getAgencies() {
-    const snapshot = await get(ref(db, PATHS.agencies));
-    if (!snapshot.exists()) return [];
-    return snapToArray(snapshot).sort((a, b) =>
-      (a.name || '').localeCompare(b.name || '', 'ko')
-    );
-  },
-
-  async addAgency(data) {
-    const newAgency = {
-      name:      data.name      || '',
-      code:      data.code      || '',
-      contact:   data.contact   || '',
-      memo:      data.memo      || '',
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
-    const newRef = await push(ref(db, PATHS.agencies), newAgency);
-    dispatch('ha:agencies:updated');
-    return { ...newAgency, _key: newRef.key };
-  },
-
-  async updateAgency(key, patch) {
-    await update(ref(db, `${PATHS.agencies}/${key}`), patch);
-    dispatch('ha:agencies:updated');
-  },
-
-  async deleteAgency(key) {
-    await remove(ref(db, `${PATHS.agencies}/${key}`));
-    dispatch('ha:agencies:updated');
   },
 
   // ════════════════════════════════════════════════════════
