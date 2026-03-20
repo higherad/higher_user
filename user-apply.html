@@ -263,28 +263,6 @@
         </div>
       </div>
 
-      <!-- 가격비교 (조건부) -->
-      <div class="form-section conditional-field" id="sec-compare">
-        <div class="form-section-title">가격비교 정보</div>
-        <div class="form-row">
-          <div class="form-field"><label>가격비교 URL</label><input id="f-compareUrl" type="url" placeholder="https://..."></div>
-          <div class="form-field"><label>가격비교 MID</label><input id="f-compareMid" type="text" placeholder="예: 87654321"></div>
-        </div>
-      </div>
-
-      <!-- 판매처 통제 (조건부) -->
-      <div class="form-section conditional-field" id="sec-seller">
-        <div class="form-section-title">판매처 통제</div>
-        <div class="form-field">
-          <label>판매처 통제 여부</label>
-          <select id="f-sellerControl">
-            <option value="">선택 안함</option>
-            <option value="Y">Y - 통제 있음</option>
-            <option value="N">N - 통제 없음</option>
-          </select>
-        </div>
-      </div>
-
       <!-- 운영 기간 -->
       <div class="form-section">
         <div class="form-row">
@@ -462,14 +440,6 @@
     document.getElementById('mode-excel').style.display  = mode==='excel'  ? 'block' : 'none';
     document.getElementById('tab-single').classList.toggle('active', mode==='single');
     document.getElementById('tab-excel').classList.toggle('active',  mode==='excel');
-  };
-
-  // ── 탭 전환 ───────────────────────────────────────────────
-    } else {
-      guide.style.display = 'none';
-    }
-    document.getElementById('sec-compare').classList.toggle('show', !!meta.showCompare);
-    document.getElementById('sec-seller').classList.toggle('show',  !!meta.showSeller);
   };
 
   // ── 스텝 UI ───────────────────────────────────────────────
