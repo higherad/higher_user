@@ -27,10 +27,11 @@ const auth = getAuth(app);
 
 // ── DB 경로 상수 ─────────────────────────────────────────────
 const PATHS = {
-  slots:   'ha/slots',
-  users:   'ha/users',
-  notices: 'ha/notices',
-  paid:    'ha/paid_slots',
+  slots:     'ha/slots',
+  users:     'ha/users',
+  notices:   'ha/notices',
+  paid:      'ha/paid_slots',
+  agencies:  'ha/agencies',
 };
 
 // ── 텔레그램 알림 설정 ────────────────────────────────────────
@@ -254,6 +255,41 @@ ${lines}
   async deleteUser(key) {
     await remove(ref(db, `${PATHS.users}/${key}`));
     dispatch('ha:users:updated');
+  },
+
+  // ════════════════════════════════════════════════════════
+  // 대행사 CRUD
+  // ════════════════════════════════════════════════════════
+
+  async getAgencies() {
+    const snapshot = await get(ref(db, PATHS.agencies));
+    if (!snapshot.exists()) return [];
+    return snapToArray(snapshot).sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', 'ko')
+    );
+  },
+
+  async addAgency(data) {
+    const newAgency = {
+      name:      data.name      || '',
+      code:      data.code      || '',
+      contact:   data.contact   || '',
+      memo:      data.memo      || '',
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    const newRef = await push(ref(db, PATHS.agencies), newAgency);
+    dispatch('ha:agencies:updated');
+    return { ...newAgency, _key: newRef.key };
+  },
+
+  async updateAgency(key, patch) {
+    await update(ref(db, `${PATHS.agencies}/${key}`), patch);
+    dispatch('ha:agencies:updated');
+  },
+
+  async deleteAgency(key) {
+    await remove(ref(db, `${PATHS.agencies}/${key}`));
+    dispatch('ha:agencies:updated');
   },
 
   // ════════════════════════════════════════════════════════
