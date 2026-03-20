@@ -449,7 +449,7 @@
       <div class="stat-card c-info">
         <div class="stat-icon info"><i data-lucide="trending-up" size="18"></i></div>
         <div class="stat-label">진행중 전체 목표</div>
-        <div class="stat-value">${active.reduce((a,s)=>a+(s.dailyTarget||0),0).toLocaleString()}<span class="stat-unit">개</span></div>
+        <div class="stat-value">${active.reduce((a,s)=>a+(s.dailyTarget||0)*(s.days||0),0).toLocaleString()}<span class="stat-unit">개</span></div>
       </div>
       <div class="stat-card c-warn">
         <div class="stat-icon warn"><i data-lucide="timer" size="18"></i></div>
