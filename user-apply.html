@@ -136,6 +136,55 @@
     .template-box .t-text { font-size:13px; color:var(--text2); }
     .template-box .t-text strong { color:var(--info); }
     .btn-template { padding:7px 16px; background:var(--info); color:#fff; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; }
+
+    /* ── 반응형 ── */
+    @media (max-width: 768px) {
+      /* 헤더 */
+      header { padding: 0 16px; height: 56px; }
+      .header-back span { display: none; }
+
+      /* 페이지 래퍼 */
+      .page-wrap { padding: 20px 16px 60px; }
+
+      /* 탭 버튼 */
+      .tab-bar { gap: 6px; }
+      .tab-btn { padding: 9px 16px; font-size: 13px; flex: 1; text-align: center; }
+
+      /* 스텝바 */
+      .steps-bar { margin-bottom: 20px; }
+      .step-label { font-size: 12px; }
+
+      /* 폼 카드 */
+      .form-card { padding: 20px 16px; border-radius: 14px; }
+      .card-title { font-size: 17px; }
+
+      /* 2열 → 1열 */
+      .form-row { grid-template-columns: 1fr; gap: 0; }
+
+      /* 확인 화면 */
+      .confirm-key { width: 100px; font-size: 11px; }
+      .confirm-row { font-size: 12px; }
+
+      /* 완료 화면 */
+      .success-card { padding: 40px 20px; }
+      .success-actions { flex-direction: column; }
+      .success-actions button { width: 100%; }
+
+      /* 하단 버튼 */
+      .form-actions { flex-direction: column-reverse; gap: 10px; }
+      .btn-prev, .btn-next, .btn-ghost { width: 100%; justify-content: center; }
+
+      /* 엑셀 업로드 존 */
+      .excel-zone { padding: 24px 16px; }
+      .excel-zone .upload-title { font-size: 14px; }
+
+      /* 템플릿 박스 */
+      .template-box { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .btn-template { width: 100%; text-align: center; }
+
+      /* 미리보기 테이블 */
+      .preview-wrap { max-height: 240px; }
+    }
   </style>
 </head>
 <body>
@@ -211,6 +260,28 @@
             <label>작업 키워드</label>
             <input id="f-workKeyword" type="text" placeholder="">
           </div>
+        </div>
+      </div>
+
+      <!-- 가격비교 (조건부) -->
+      <div class="form-section conditional-field" id="sec-compare">
+        <div class="form-section-title">가격비교 정보</div>
+        <div class="form-row">
+          <div class="form-field"><label>가격비교 URL</label><input id="f-compareUrl" type="url" placeholder="https://..."></div>
+          <div class="form-field"><label>가격비교 MID</label><input id="f-compareMid" type="text" placeholder="예: 87654321"></div>
+        </div>
+      </div>
+
+      <!-- 판매처 통제 (조건부) -->
+      <div class="form-section conditional-field" id="sec-seller">
+        <div class="form-section-title">판매처 통제</div>
+        <div class="form-field">
+          <label>판매처 통제 여부</label>
+          <select id="f-sellerControl">
+            <option value="">선택 안함</option>
+            <option value="Y">Y - 통제 있음</option>
+            <option value="N">N - 통제 없음</option>
+          </select>
         </div>
       </div>
 
@@ -393,6 +464,14 @@
     document.getElementById('tab-excel').classList.toggle('active',  mode==='excel');
   };
 
+  // ── 탭 전환 ───────────────────────────────────────────────
+    } else {
+      guide.style.display = 'none';
+    }
+    document.getElementById('sec-compare').classList.toggle('show', !!meta.showCompare);
+    document.getElementById('sec-seller').classList.toggle('show',  !!meta.showSeller);
+  };
+
   // ── 스텝 UI ───────────────────────────────────────────────
   function setStepUI(step) {
     document.getElementById('step-1').style.display = step===1 ? 'block' : 'none';
@@ -490,6 +569,9 @@
         url:           document.getElementById('f-url').value,
         mid:           document.getElementById('f-mid').value,
         workKeyword:   document.getElementById('f-workKeyword').value,
+        compareUrl:    '',
+        compareMid:    '',
+        sellerControl: '',
         startDate:     document.getElementById('f-startDate').value,
         endDate:       document.getElementById('f-endDate').value,
         days:          Number(document.getElementById('f-days').value) || 0,
