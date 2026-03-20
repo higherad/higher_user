@@ -530,12 +530,12 @@
     const unitPrice = myUser ? (myUser.unitPrice || 0) : 0;
 
     const mySlots = allSlots.filter(s =>
-      s.userId === user.username && (s.status === 'active' || s.status === 'expired')
+      s.userId === user.username && (s.status === 'active' || s.status === 'expired' || s.status === 'pending')
     );
 
     const totalDailyTarget = mySlots.reduce((a,s) => a + (s.dailyTarget||0), 0);
-    const totalAmount      = mySlots.reduce((a,s) => a + (s.dailyTarget||0) * unitPrice, 0);
-    const paidAmount       = mySlots.filter(s => paidSet.has(s._key)).reduce((a,s) => a + (s.dailyTarget||0) * unitPrice, 0);
+    const totalAmount      = mySlots.reduce((a,s) => a + (s.dailyTarget||0) * (s.days||0) * unitPrice, 0);
+    const paidAmount       = mySlots.filter(s => paidSet.has(s._key)).reduce((a,s) => a + (s.dailyTarget||0) * (s.days||0) * unitPrice, 0);
     const unpaidAmount     = totalAmount - paidAmount;
 
     settleList.innerHTML = `
@@ -572,7 +572,7 @@
             </thead>
             <tbody>
               ${mySlots.length ? mySlots.map(s => {
-                const amount = (s.dailyTarget||0) * unitPrice;
+                const amount = (s.dailyTarget||0) * (s.days||0) * unitPrice;
                 const isPaid = paidSet.has(s._key);
                 return `<tr>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:500">${s.storeName||'-'}</td>
