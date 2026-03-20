@@ -107,6 +107,10 @@
         <label class="field-label">비밀번호 확인 *</label>
         <input class="field-input" id="su-pw2" type="password" placeholder="비밀번호를 다시 입력하세요">
       </div>
+      <div class="field-group">
+        <label class="field-label">업체명 *</label>
+        <input class="field-input" id="su-agency" type="text" placeholder="업체명을 입력하세요">
+      </div>
       <div class="error-msg" id="signup-error"></div>
       <div class="success-msg" id="signup-success"></div>
       <button class="login-btn" id="signup-btn" onclick="doSignup()">회원가입</button>
@@ -172,6 +176,7 @@
     const username  = document.getElementById('su-id').value.trim();
     const password  = document.getElementById('su-pw').value;
     const password2 = document.getElementById('su-pw2').value;
+    const agency    = document.getElementById('su-agency').value.trim();
     const errEl     = document.getElementById('signup-error');
     const sucEl     = document.getElementById('signup-success');
     const btn       = document.getElementById('signup-btn');
@@ -183,6 +188,7 @@
     if (username.length < 4)    { errEl.textContent = '아이디는 4자 이상 입력해주세요.';    errEl.classList.add('show'); return; }
     if (password.length < 6)    { errEl.textContent = '비밀번호는 6자 이상 입력해주세요.';  errEl.classList.add('show'); return; }
     if (password !== password2)  { errEl.textContent = '비밀번호가 일치하지 않습니다.';       errEl.classList.add('show'); return; }
+    if (!agency)                 { errEl.textContent = '업체명을 입력해주세요.';              errEl.classList.add('show'); return; }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>처리 중...';
@@ -198,7 +204,7 @@
         return;
       }
 
-      await HA.addUser({ username, password, unitPrice: 0 });
+      await HA.addUser({ username, password, agency, unitPrice: 0 });
 
       sucEl.textContent = '회원가입이 완료되었습니다! 관리자 승인 후 로그인 가능합니다.';
       sucEl.classList.add('show');
@@ -209,6 +215,7 @@
         document.getElementById('su-id').value = '';
         document.getElementById('su-pw').value = '';
         document.getElementById('su-pw2').value = '';
+        document.getElementById('su-agency').value = '';
         sucEl.classList.remove('show');
         switchTab('login');
       }, 2500);
