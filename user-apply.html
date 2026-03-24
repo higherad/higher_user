@@ -514,7 +514,7 @@
     const start = document.getElementById('f-startDate').value;
     if (days > 0 && start) {
       const s = new Date(start);
-      s.setDate(s.getDate() + days);
+      s.setDate(s.getDate() + days - 1);
       document.getElementById('f-endDate').value = fmt(s);
     } else if (start) {
       document.getElementById('f-endDate').value = start;
@@ -692,7 +692,7 @@
           const startDate = normalizeDateCell(r[5]);
 
           const endD = new Date(startDate);
-          endD.setDate(endD.getDate() + days);
+          endD.setDate(endD.getDate() + days - 1);
           const endDate = fmt(endD);
 
           const today_str = fmt(new Date());
