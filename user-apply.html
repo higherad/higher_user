@@ -500,11 +500,8 @@
   window.onUrlInput = function() {
     const url = document.getElementById('f-url').value.trim();
     const mid = extractMidFromUrl(url);
-    if (mid) {
-      document.getElementById('f-mid').value = mid;
-      document.getElementById('f-mid').classList.remove('error');
-      document.getElementById('err-mid').style.display = 'none';
-    }
+    // URL 내용과 무관하게 항상 MID 동기화 (URL 지우면 MID도 초기화)
+    document.getElementById('f-mid').value = mid || '';
     // 에러 초기화
     document.getElementById('f-url').classList.remove('error');
     document.getElementById('err-url').textContent = 'URL을 입력해주세요.';
