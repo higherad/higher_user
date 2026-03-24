@@ -266,6 +266,29 @@
       /* 정산 요약 카드 — 1열 */
       .settle-summary { grid-template-columns: 1fr; }
     }
+
+    /* ── 프로필 모달 ── */
+    .profile-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9100;display:flex;align-items:center;justify-content:center;padding:20px; }
+    .profile-box { background:#fff;border-radius:18px;width:420px;padding:32px;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:slideUp .25s ease-out; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .profile-header { display:flex;align-items:center;gap:14px;margin-bottom:24px; }
+    .profile-avatar-lg { width:52px;height:52px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0; }
+    .profile-header-info h3 { font-size:16px;font-weight:800;color:var(--text); }
+    .profile-header-info p  { font-size:12px;color:var(--text2);margin-top:2px; }
+    .profile-divider { border:none;border-top:1px solid var(--border);margin:0 0 20px; }
+    .profile-field { margin-bottom:16px; }
+    .profile-field label { display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px; }
+    .profile-field input { width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;outline:none;color:var(--text);transition:.2s; }
+    .profile-field input:focus { border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,185,129,.1); }
+    .profile-field input[readonly] { background:#f8fafc;color:var(--text2);cursor:default; }
+    .profile-hint { font-size:11px;color:var(--muted);margin-top:5px; }
+    .profile-footer { display:flex;justify-content:flex-end;gap:10px;margin-top:24px; }
+    .profile-btn-cancel { padding:10px 22px;border:1.5px solid var(--border);border-radius:9px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;color:var(--text2); }
+    .profile-btn-save { padding:10px 22px;border:none;border-radius:9px;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;box-shadow:0 4px 12px rgba(16,185,129,.25); }
+    .profile-btn-save:disabled { background:var(--muted);box-shadow:none;cursor:not-allowed; }
+    .profile-msg { font-size:12px;padding:10px 14px;border-radius:8px;margin-top:12px;display:none; }
+    .profile-msg.success { background:rgba(16,185,129,.08);color:#059669;border-left:3px solid var(--accent);display:block; }
+    .profile-msg.error   { background:rgba(239,68,68,.06);color:var(--danger);border-left:3px solid var(--danger);display:block; }
   </style>
 </head>
 <body>
@@ -279,9 +302,13 @@
     <div class="nav-tab" id="tab-notices" onclick="switchTab('notices')">공지사항</div>
   </div>
   <div class="header-right">
-    <div class="header-user">
+    <div class="header-user" id="header-user-btn" onclick="openProfileModal()" title="내 정보 변경"
+      style="cursor:pointer;padding:5px 8px;border-radius:8px;transition:.2s;"
+      onmouseover="this.style.background='rgba(255,255,255,.08)'"
+      onmouseout="this.style.background='transparent'">
       <div class="header-avatar" id="user-avatar">?</div>
       <span><strong id="user-name">-</strong> 님</span>
+      <i data-lucide="chevron-down" size="12" style="color:var(--muted);margin-left:2px"></i>
     </div>
     <div class="btn-logout" onclick="doLogout()">
       <i data-lucide="log-out" size="13"></i> 로그아웃
@@ -371,9 +398,10 @@
   if (!user || user.role === 'admin') location.href = 'user-login.html';
 
   // ── 유저 정보 세팅 ───────────────────────────────────────────
-  document.getElementById('user-name').textContent = user.username;
-  document.getElementById('user-avatar').textContent = user.username.charAt(0).toUpperCase();
-  document.getElementById('welcome-msg').textContent = `안녕하세요, ${user.username} 님 👋`;
+  const displayName = user.agency || user.agencyId || user.username;
+  document.getElementById('user-name').textContent = displayName;
+  document.getElementById('user-avatar').textContent = displayName.charAt(0).toUpperCase();
+  document.getElementById('welcome-msg').textContent = `안녕하세요, ${displayName} 님 👋`;
 
   // ── 탭 전환 ─────────────────────────────────────────────────
   window.switchTab = function switchTab(tab) {
@@ -665,6 +693,103 @@
           </table>
         </div>
       </div>`;
+  };
+
+  // ── 프로필 정보 변경 모달 ────────────────────────────────────
+  window.openProfileModal = function() {
+    const displayName = user.agency || user.agencyId || user.username;
+    const overlay = document.createElement('div');
+    overlay.className = 'profile-overlay';
+    overlay.innerHTML = `
+      <div class="profile-box">
+        <div class="profile-header">
+          <div class="profile-avatar-lg" id="pm-avatar">${displayName.charAt(0).toUpperCase()}</div>
+          <div class="profile-header-info">
+            <h3 id="pm-display">${displayName}</h3>
+            <p>${user.username}</p>
+          </div>
+        </div>
+        <hr class="profile-divider">
+        <div class="profile-field">
+          <label>아이디</label>
+          <input value="${user.username}" readonly>
+        </div>
+        <div class="profile-field">
+          <label>업체명 (대행사)</label>
+          <input id="pm-agency" value="${user.agency || user.agencyId || ''}" placeholder="업체명을 입력하세요">
+        </div>
+        <div class="profile-field">
+          <label>새 비밀번호</label>
+          <input id="pm-pw" type="password" placeholder="변경할 비밀번호 입력 (변경 없으면 비워두세요)">
+          <div class="profile-hint">6자 이상 입력 시 변경됩니다</div>
+        </div>
+        <div class="profile-field">
+          <label>비밀번호 확인</label>
+          <input id="pm-pw2" type="password" placeholder="비밀번호를 다시 입력하세요">
+        </div>
+        <div id="pm-msg" class="profile-msg"></div>
+        <div class="profile-footer">
+          <button class="profile-btn-cancel" onclick="this.closest('.profile-overlay').remove()">취소</button>
+          <button class="profile-btn-save" id="pm-save-btn" onclick="saveProfile()">저장</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    lucide.createIcons();
+  };
+
+  window.saveProfile = async function() {
+    const agency  = document.getElementById('pm-agency').value.trim();
+    const pw      = document.getElementById('pm-pw').value;
+    const pw2     = document.getElementById('pm-pw2').value;
+    const msgEl   = document.getElementById('pm-msg');
+    const saveBtn = document.getElementById('pm-save-btn');
+
+    msgEl.className = 'profile-msg';
+    msgEl.textContent = '';
+
+    if (pw && pw.length < 6) {
+      msgEl.textContent = '비밀번호는 6자 이상 입력해주세요.';
+      msgEl.className = 'profile-msg error'; return;
+    }
+    if (pw && pw !== pw2) {
+      msgEl.textContent = '비밀번호가 일치하지 않습니다.';
+      msgEl.className = 'profile-msg error'; return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중...';
+
+    try {
+      const patch = { agency, agencyId: agency };
+      if (pw) patch.password = pw;
+
+      await HA.updateUser(user._key, patch);
+
+      // 세션 갱신
+      const updated = { ...user, agency, agencyId: agency };
+      if (pw) updated.password = pw;
+      sessionStorage.setItem('ha_current_user', JSON.stringify(updated));
+
+      // 헤더 즉시 반영
+      const newDisplay = agency || user.username;
+      document.getElementById('user-name').textContent = newDisplay;
+      document.getElementById('user-avatar').textContent = newDisplay.charAt(0).toUpperCase();
+      document.getElementById('pm-display').textContent = newDisplay;
+      document.getElementById('pm-avatar').textContent = newDisplay.charAt(0).toUpperCase();
+
+      msgEl.textContent = '✓ 저장되었습니다.';
+      msgEl.className = 'profile-msg success';
+      saveBtn.disabled = false;
+      saveBtn.textContent = '저장';
+      document.getElementById('pm-pw').value = '';
+      document.getElementById('pm-pw2').value = '';
+    } catch(e) {
+      msgEl.textContent = '저장 중 오류가 발생했습니다.';
+      msgEl.className = 'profile-msg error';
+      saveBtn.disabled = false;
+      saveBtn.textContent = '저장';
+    }
   };
 
   window.doLogout = function() {
