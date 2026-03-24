@@ -769,18 +769,10 @@
   window.downloadTemplate = function() {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([
-      ['슬롯 접수 양식'],
-      ['아래 컬럼 순서 그대로 입력 후 업로드하세요.'],
       ['업체명', 'URL', 'MID', '순위키워드', '일 수', '시작일', '일 목표'],
       ['예시: 테스트 맛집', 'https://m.place.naver.com/restaurant/123456789', '123456789', '강남 맛집', 7, '2026-03-20', 1000],
     ]);
-    ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } },
-    ];
-    ws['!autofilter'] = { ref: 'A3:G3' };
-    ws['!freeze'] = { xSplit: 0, ySplit: 3 };
-    ws['!rows'] = [{ hpt: 24 }, { hpt: 20 }, { hpt: 22 }, { hpt: 20 }];
+    ws['!rows'] = [{ hpt: 22 }, { hpt: 20 }];
     ws['!cols'] = [
       {wch:20},{wch:50},{wch:15},{wch:20},{wch:8},{wch:18},{wch:12}
     ];
