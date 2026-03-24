@@ -535,18 +535,16 @@
 
     tbl.innerHTML = `<table>
       <thead><tr>
-        <th>스토어명</th><th>순위키워드</th><th>URL</th>
+        <th>스토어명</th><th>MID</th><th>순위키워드</th>
         <th>일 수</th><th>시작일</th><th>종료일</th><th>D-Day</th><th>일 목표</th><th>상태</th>
       </tr></thead>
       <tbody>${slots.map(s => `<tr>
-        <td style="font-weight:500">${s.storeName||'-'}</td>
+        <td style="font-weight:500">${s.url ? `<a href="${s.url}" target="_blank" style="color:var(--text);text-decoration:none;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${s.storeName||'-'}</a>` : (s.storeName||'-')}</td>
+        <td style="color:var(--text2);font-size:11px">${s.mid||'-'}</td>
         <td style="color:var(--text2)">${s.rankKeyword||'-'}</td>
-        <td style="font-size:11px;color:var(--text2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-          <a href="${s.url}" target="_blank" style="color:var(--info)">${s.url||'-'}</a>
-        </td>
         <td style="color:var(--text2)">${s.days||'-'}</td>
-        <td style="color:var(--text2)">${s.startDate}</td>
-        <td style="color:var(--text2)">${s.endDate}</td>
+        <td style="color:var(--text2)">${s.startDate||'-'}</td>
+        <td style="color:var(--text2)">${s.endDate||'-'}</td>
         <td>${s.status==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
         <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
         <td>${statusBadge[s.status]||s.status}
@@ -633,10 +631,12 @@
           <table>
             <thead>
               <tr>
-                <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">업체명</th>
+                <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">스토어명</th>
                 <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">시작일</th>
                 <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">종료일</th>
+                <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">일 수</th>
                 <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">일 목표</th>
+                <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">전체 목표</th>
                 <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">단가</th>
                 <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">정산금액</th>
                 <th style="background:var(--navy);color:#fff;padding:12px 14px;font-weight:500;text-align:center;white-space:nowrap">정산상태</th>
@@ -646,18 +646,21 @@
               ${mySlots.length ? mySlots.map(s => {
                 const amount = (s.dailyTarget||0) * (s.days||0) * unitPrice;
                 const isPaid = paidSet.has(s._key);
+                const totalTarget = (s.dailyTarget||0) * (s.days||0);
                 return `<tr>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:500">${s.storeName||'-'}</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">${s.startDate||'-'}</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">${s.endDate||'-'}</td>
+                  <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">${s.days||'-'}</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center">${(s.dailyTarget||0).toLocaleString()}</td>
+                  <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:600">${totalTarget.toLocaleString()}</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">${unitPrice.toLocaleString()}원</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:700;color:var(--accent)">${amount.toLocaleString()}원</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center">
                     ${isPaid ? '<span class="paid-badge">정산완료</span>' : '<span class="unpaid-badge">미정산</span>'}
                   </td>
                 </tr>`;
-              }).join('') : `<tr><td colspan="8" style="padding:60px;text-align:center;color:var(--muted)">정산 데이터가 없습니다.</td></tr>`}
+              }).join('') : `<tr><td colspan="9" style="padding:60px;text-align:center;color:var(--muted)">정산 데이터가 없습니다.</td></tr>`}
             </tbody>
           </table>
         </div>
