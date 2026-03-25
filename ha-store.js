@@ -12,13 +12,14 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
 
 // ── Firebase 초기화 ──────────────────────────────────────────
 const firebaseConfig = {
-  apiKey: "AIzaSyCRnAMy3PyD0zracrwyo17hEZ-R40pAvt4",
-  authDomain: "higherad-530c4.firebaseapp.com",
-  databaseURL: "https://higherad-530c4-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "higherad-530c4",
-  storageBucket: "higherad-530c4.firebasestorage.app",
-  messagingSenderId: "1028078651420",
-  appId: "1:1028078651420:web:71c8b8c5e69f0772d637d9"
+  apiKey: "AIzaSyAF-Rn7tzIjQeyUDJKnvKTRNccsXUVsIjo",
+  authDomain: "higherad-b9d62.firebaseapp.com",
+  databaseURL: "https://higherad-b9d62-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "higherad-b9d62",
+  storageBucket: "higherad-b9d62.firebasestorage.app",
+  messagingSenderId: "938928195180",
+  appId: "1:938928195180:web:8209b1e02a8caabe643a49",
+  measurementId: "G-01T4L4ZGVV"
 };
 
 const app  = initializeApp(firebaseConfig);
