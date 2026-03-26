@@ -67,10 +67,13 @@ async function sendTelegram(message) {
 }
 
 // ── 텔레그램 배치 큐 ─────────────────────────────────────────
+// ※ leading-timer 방식: 첫 접수 시점 기준으로 DELAY 후 일괄 발송.
+//    타이머가 이미 돌고 있으면 clearTimeout 하지 않으므로
+//    연속 접수가 이어져도 메시지가 씹히지 않는다.
 const _telegramBatch = {
   queue: [],
   timer: null,
-  DELAY: 15000,  // 15초 묶음 대기 (ms) — 대량 업로드 대응
+  DELAY: 15000,  // 15초 묶음 대기 (ms)
 };
 
 // ── 유틸: Firebase 스냅샷 → 배열 변환 ───────────────────────
@@ -166,10 +169,12 @@ const HA = {
     const result = { ...newSlot, _key: newRef.key };
     dispatch('ha:slots:updated');
 
-    // ── 텔레그램 배치 알림 ──────────────────────────────────
+    // ── 텔레그램 배치 알림 (leading-timer) ─────────────────
+    // 타이머가 없을 때만 새로 걸어둔다.
+    // 이미 타이머가 돌고 있으면 큐에만 추가하고 종료.
     _telegramBatch.queue.push(newSlot);
 
-    if (_telegramBatch.timer) clearTimeout(_telegramBatch.timer);
+    if (_telegramBatch.timer) return result; // 타이머 이미 실행 중 → 큐에만 쌓고 끝
 
     _telegramBatch.timer = setTimeout(async () => {
       const batch = [..._telegramBatch.queue];
