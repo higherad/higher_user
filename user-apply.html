@@ -717,6 +717,7 @@
           if (days === null || isNaN(days) || days <= 0)   errors.push('일 수 누락');
           if (!startDate)                                  errors.push('시작일 형식 오류');
           else if (startDate < today_str)                  errors.push('오늘 이전 시작일');
+          if (!mid)                                        errors.push('MID 누락');
           if (mid && urlMid && mid !== urlMid)             errors.push('URL MID와 입력 MID 불일치');
           if (dailyTarget === null || isNaN(dailyTarget))  errors.push('일 목표 누락');
 
