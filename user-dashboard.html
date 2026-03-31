@@ -366,11 +366,11 @@
       </select>
       <select id="f-range" onchange="renderMySlots()">
         <option value="all" selected>전체 진행중</option>
-        <option value="3">3일 이내</option>
-        <option value="7">7일 이내</option>
-        <option value="14">14일 이내</option>
+        <option value="3">3일 이내 만료</option>
+        <option value="7">7일 이내 만료</option>
+        <option value="14">14일 이내 만료</option>
       </select>
-      <input type="text" id="f-kw" placeholder="스토어명/키워드 검색">
+      <input type="text" id="f-kw" placeholder="스토어명/MID/키워드 검색">
       <button class="btn-search" onclick="renderMySlots()">검색</button>
       <button class="btn-apply-sm" onclick="location.href='user-apply.html'">
         <i data-lucide="plus" size="13"></i> 슬롯 신청
@@ -467,7 +467,7 @@
       <div class="stat-card c-info">
         <div class="stat-icon info"><i data-lucide="trending-up" size="18"></i></div>
         <div class="stat-label">진행중 전체 목표</div>
-        <div class="stat-value">${active.reduce((a,s)=>a+(s.dailyTarget||0),0).toLocaleString()}<span class="stat-unit">개</span></div>
+        <div class="stat-value">${active.reduce((a,s)=>a+(s.dailyTarget||0)*(s.days||0),0).toLocaleString()}<span class="stat-unit">개</span></div>
       </div>
       <div class="stat-card c-warn">
         <div class="stat-icon warn"><i data-lucide="timer" size="18"></i></div>
@@ -530,7 +530,7 @@
     // 일자 필터 (active 슬롯에만 적용)
     let slots = mySlots.filter(s => {
       if (status && s.status !== status) return false;
-      if (kw && ![(s.storeName||''),(s.rankKeyword||'')].some(v=>v.toLowerCase().includes(kw))) return false;
+      if (kw && ![(s.storeName||''),(s.rankKeyword||''),(s.mid||'')].some(v=>v.toLowerCase().includes(kw))) return false;
       // 일자 필터: active 슬롯 + 오늘 이후 종료일만
       if (range !== 'all') {
         if (s.status !== 'active') return false;
@@ -554,9 +554,9 @@
     const t14 = activeSlots.filter(s => { const d=getDday(s.endDate); return d>=8 && d<=14; }).length;
     const sumEl = document.getElementById('my-slots-summary');
     let summaryItems = `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;min-width:60px">진행중<br><span style="font-size:18px;font-weight:800;color:var(--accent)">${activeSlots.length}<small style="font-size:11px;color:var(--muted);font-weight:400"> 개</small></span></div>`;
-    if(range==='3'||range==='7'||range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">3일 이내<br><span style="font-size:18px;font-weight:800;color:var(--danger)">${t3}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
-    if(range==='7'||range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">7일 이내<br><span style="font-size:18px;font-weight:800;color:var(--warn)">${t7}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
-    if(range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">14일 이내<br><span style="font-size:18px;font-weight:800;color:var(--info)">${t14}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
+    if(range==='3'||range==='7'||range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">3일 이내 만료<br><span style="font-size:18px;font-weight:800;color:var(--danger)">${t3}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
+    if(range==='7'||range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">7일 이내 만료<br><span style="font-size:18px;font-weight:800;color:var(--warn)">${t7}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
+    if(range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">14일 이내 만료<br><span style="font-size:18px;font-weight:800;color:var(--info)">${t14}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
     sumEl.innerHTML = summaryItems;
 
     const tbl = document.getElementById('slots-table');
@@ -571,7 +571,7 @@
     tbl.innerHTML = `<table>
       <thead><tr>
         <th>스토어명</th><th>MID</th><th>순위키워드</th>
-        <th>일 수</th><th>시작일</th><th>종료일</th><th>D-Day</th><th>일 목표</th><th>상태</th>
+        <th>일 수</th><th>시작일</th><th>종료일</th><th>일 목표</th><th>D-Day</th><th>상태</th>
       </tr></thead>
       <tbody>${slots.map(s => `<tr>
         <td style="font-weight:500">${s.url ? `<a href="${s.url}" target="_blank" style="color:var(--text);text-decoration:none;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${s.storeName||'-'}</a>` : (s.storeName||'-')}</td>
@@ -580,8 +580,8 @@
         <td style="color:var(--text2)">${s.days||'-'}</td>
         <td style="color:var(--text2)">${s.startDate||'-'}</td>
         <td style="color:var(--text2)">${s.endDate||'-'}</td>
-        <td>${s.status==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
         <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
+        <td>${s.status==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
         <td>${statusBadge[s.status]||s.status}
           ${s.status==='rejected' && s.rejectReason ? `<br><small style="color:var(--danger);font-size:10px">${s.rejectReason}</small>` : ''}
         </td>
