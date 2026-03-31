@@ -735,10 +735,9 @@
                 const amount   = getSlotAmount(s);
                 const totTgt   = getSlotTarget(s);
                 const isPaid   = paidSet.has(s._key);
-                const snapIcon = isPast ? ' 🔒' : '';
                 return `<tr>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;font-weight:500">${s.storeName||'-'}</td>
-                  <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2);font-size:11px">${d||'-'}${snapIcon}</td>
+                  <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2);font-size:11px">${d||'-'}</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">${s.startDate||'-'}</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">${s.endDate||'-'}</td>
                   <td style="padding:12px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)">${s.days||'-'}</td>
