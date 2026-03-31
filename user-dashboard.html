@@ -223,7 +223,7 @@
     .btn-apply-sm:hover { background: var(--accent2); }
 
     /* ── 정산 ── */
-    .settle-summary { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:20px; }
+    .settle-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
     .settle-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; position:relative; overflow:hidden; }
     .settle-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--accent); }
     .settle-card.warn::after { background:var(--warn); }
@@ -819,11 +819,6 @@
     settleList.innerHTML = `
       <div style="padding:20px 20px 0">
         <div class="settle-summary">
-          <div class="settle-card">
-            <div class="settle-label">총 정산금액</div>
-            <div class="settle-value">${Math.round(totalAmount).toLocaleString()}<span class="settle-unit">원</span></div>
-            <div style="font-size:11px;color:var(--text2);margin-top:6px">단가: ${unitPrice.toLocaleString()}원/개</div>
-          </div>
           <div class="settle-card purple">
             <div class="settle-label">${monthLabel} 정산 금액</div>
             <div class="settle-value" style="color:#8b5cf6">${Math.round(monthAmount).toLocaleString()}<span class="settle-unit">원</span></div>
@@ -837,10 +832,6 @@
           <div class="settle-card warn">
             <div class="settle-label">미정산 금액</div>
             <div class="settle-value" style="color:var(--warn)">${Math.round(unpaidAmount).toLocaleString()}<span class="settle-unit">원</span></div>
-          </div>
-          <div class="settle-card info">
-            <div class="settle-label">정산 완료</div>
-            <div class="settle-value" style="color:var(--accent)">${Math.round(paidAmount).toLocaleString()}<span class="settle-unit">원</span></div>
           </div>
         </div>
       </div>
