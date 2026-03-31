@@ -712,7 +712,7 @@
     const paidAmount   = mySlots.filter(s => paidSet.has(s._key)).reduce((a,s) => a + getSlotAmount(s), 0);
     const unpaidAmount = totalAmount - paidAmount;
 
-    // 당월 정산금액 (접수일 기준 당월)
+    // 당월 정산 금액(VAT 별도) (접수일 기준 당월)
     const monthSlots = mySlots.filter(s => {
       const d = (s.createdAt||'').slice(0,10);
       if (!d) return false;
@@ -721,7 +721,7 @@
     });
     const monthAmount = monthSlots.reduce((a,s) => a + getSlotAmount(s), 0);
 
-    // 일 정산금액 (오늘 접수된 건만)
+    // 일 정산 금액(VAT 별도) (오늘 접수된 건만)
     const todaySlots = mySlots.filter(s => (s.createdAt||'').slice(0,10) === todayStr);
     const todayAmount = todaySlots.reduce((a,s) => a + getSlotAmount(s), 0);
 
@@ -807,7 +807,7 @@
                 <th style="${thStyle}">접수 시간</th>
                 <th style="${thStyle}">전체 목표</th>
                 <th style="${thStyle}">단가</th>
-                <th style="${thStyle}">정산 금액</th>
+                <th style="${thStyle}">정산 금액(VAT 별도)</th>
                 <th style="${thStyle}">정산 상태</th>
               </tr></thead>
               <tbody>${rowsHtml}</tbody>
@@ -820,17 +820,17 @@
       <div style="padding:20px 20px 0">
         <div class="settle-summary">
           <div class="settle-card purple">
-            <div class="settle-label">${monthLabel} 정산 금액</div>
+            <div class="settle-label">${monthLabel} 정산 금액(VAT 별도)</div>
             <div class="settle-value" style="color:#8b5cf6">${Math.round(monthAmount).toLocaleString()}<span class="settle-unit">원</span></div>
             <div style="font-size:11px;color:var(--text2);margin-top:6px">${monthSlots.length}건 합산</div>
           </div>
           <div class="settle-card navy">
-            <div class="settle-label">일 정산 금액 (오늘)</div>
+            <div class="settle-label">일 정산 금액(VAT 별도) (오늘)</div>
             <div class="settle-value" style="color:var(--info)">${Math.round(todayAmount).toLocaleString()}<span class="settle-unit">원</span></div>
             <div style="font-size:11px;color:var(--text2);margin-top:6px">${todaySlots.length}건 합산</div>
           </div>
           <div class="settle-card warn">
-            <div class="settle-label">미정산 금액</div>
+            <div class="settle-label">미정산 금액(VAT 별도)</div>
             <div class="settle-value" style="color:var(--warn)">${Math.round(unpaidAmount).toLocaleString()}<span class="settle-unit">원</span></div>
           </div>
         </div>
