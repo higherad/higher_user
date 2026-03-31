@@ -736,50 +736,50 @@
     });
 
     // 그룹별 HTML 생성
-    const thStyle = `background:var(--navy);color:#fff;padding:10px 12px;font-weight:500;text-align:center;white-space:nowrap;font-size:12px`;
+    const thStyle = `background:#f1f5f9;color:var(--text2);padding:10px 12px;font-weight:600;text-align:center;white-space:nowrap;font-size:12px;border-bottom:1px solid var(--border)`;
     const tdStyle = (extra='') => `padding:10px 12px;border-bottom:1px solid var(--border);text-align:center;${extra}`;
 
     const groupsHtml = [...groupMap.entries()].map(([key, group]) => {
-      const groupTotal = group.slots.reduce((a,s) => a + getSlotTarget(s), 0);
+      const groupTotal  = group.slots.reduce((a,s) => a + getSlotTarget(s), 0);
       const groupAmount = group.slots.reduce((a,s) => a + getSlotAmount(s), 0);
 
-      const rowsHtml = group.slots.map(s => {
-        const isPaid  = paidSet.has(s._key);
-        const totTgt  = getSlotTarget(s);
-        const amount  = getSlotAmount(s);
-        const timeStr = formatTime(s.createdAt);
-        const dateStr = getDateLabel(s.createdAt);
-        return `<tr>
-          <td style="${tdStyle('font-size:12px;color:var(--text2);font-weight:600')}">
-            ${dateStr}<br><span style="color:var(--accent);font-size:13px;font-weight:700">${timeStr}</span>
-          </td>
-          <td style="${tdStyle('font-weight:600')}">${Math.round(totTgt).toLocaleString()}<small style="color:var(--muted);font-weight:400"> 개</small></td>
-          <td style="${tdStyle('color:var(--text2)')}">${unitPrice.toLocaleString()}<small style="color:var(--muted)"> 원</small></td>
-          <td style="${tdStyle('font-weight:700;color:var(--accent)')}">${Math.round(amount).toLocaleString()}<small style="color:var(--muted);font-weight:400"> 원</small></td>
-          <td style="${tdStyle()}">
-            ${isPaid ? '<span class="paid-badge">정산완료</span>' : '<span class="unpaid-badge">미정산</span>'}
-          </td>
-        </tr>`;
-      }).join('');
+      // 그룹 내 정산 상태: 모두 완료면 완료, 아니면 미정산
+      const allPaid = group.slots.every(s => paidSet.has(s._key));
+      const anyPaid = group.slots.some(s => paidSet.has(s._key));
+      const paidLabel = allPaid
+        ? '<span class="paid-badge">정산완료</span>'
+        : anyPaid
+          ? '<span class="unpaid-badge">일부정산</span>'
+          : '<span class="unpaid-badge">미정산</span>';
+
+      const firstSlot = group.slots[0];
+      const timeStr = formatTime(firstSlot.createdAt);
+      const dateStr = getDateLabel(firstSlot.createdAt);
+
+      const rowHtml = `<tr>
+        <td style="${tdStyle('font-size:12px;color:var(--text2);font-weight:600')}">
+          ${dateStr}<br><span style="color:var(--accent);font-size:13px;font-weight:700">${timeStr}</span>
+        </td>
+        <td style="${tdStyle('color:var(--text2);font-size:12px')}">${group.slots.length}건</td>
+        <td style="${tdStyle('font-weight:600')}">${Math.round(groupTotal).toLocaleString()}<small style="color:var(--muted);font-weight:400"> 개</small></td>
+        <td style="${tdStyle('color:var(--text2)')}">${unitPrice.toLocaleString()}<small style="color:var(--muted)"> 원</small></td>
+        <td style="${tdStyle('font-weight:700;color:var(--accent)')}">${Math.round(groupAmount).toLocaleString()}<small style="color:var(--muted);font-weight:400"> 원</small></td>
+        <td style="${tdStyle()}">${paidLabel}</td>
+      </tr>`;
 
       return `
         <div class="settle-time-group">
-          <div class="settle-time-header">
-            <i data-lucide="clock" size="14"></i>
-            접수시간 ${key}
-            <span class="settle-time-badge">${group.slots.length}건</span>
-            <span class="settle-time-amount">${Math.round(groupAmount).toLocaleString()}원</span>
-          </div>
-          <div class="settle-tbl-wrap" style="border-radius:0 0 10px 10px">
+          <div class="settle-tbl-wrap" style="border-radius:10px">
             <table>
               <thead><tr>
                 <th style="${thStyle}">접수 시간</th>
+                <th style="${thStyle}">접수 건수</th>
                 <th style="${thStyle}">전체 목표</th>
                 <th style="${thStyle}">단가</th>
                 <th style="${thStyle}">정산 금액(VAT 별도)</th>
                 <th style="${thStyle}">정산 상태</th>
               </tr></thead>
-              <tbody>${rowsHtml}</tbody>
+              <tbody>${rowHtml}</tbody>
             </table>
           </div>
         </div>`;
