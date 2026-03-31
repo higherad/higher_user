@@ -510,14 +510,14 @@
       tbl.innerHTML = `<table>
         <thead><tr>
           <th>스토어명</th><th>순위키워드</th>
-          <th>기간</th><th>D-Day</th><th>순위</th><th>상태</th>
+          <th>기간</th><th>일 목표</th><th>D-Day</th><th>상태</th>
         </tr></thead>
         <tbody>${recent.map(s => `<tr>
           <td style="font-weight:500">${s.storeName||'-'}</td>
           <td style="color:var(--text2)">${s.rankKeyword||'-'}</td>
           <td style="color:var(--text2);font-size:12px">${s.startDate} ~ ${s.endDate}</td>
+          <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
           <td>${s.status==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
-          <td>${s.rank ? `<span class="rank-badge">${s.rank}위</span>` : '<span style="color:var(--muted)">-</span>'}</td>
           <td>${statusBadge[s.status]||s.status}</td>
         </tr>`).join('')}</tbody>
       </table>`;
@@ -589,7 +589,7 @@
     tbl.innerHTML = `<table>
       <thead><tr>
         <th>스토어명</th><th>MID</th><th>순위키워드</th>
-        <th>일 수</th><th>시작일</th><th>종료일</th><th>D-Day</th><th>일 목표</th><th>상태</th>
+        <th>일 수</th><th>시작일</th><th>종료일</th><th>일 목표</th><th>D-Day</th><th>상태</th>
       </tr></thead>
       <tbody>${slots.map(s => `<tr>
         <td style="font-weight:500">${s.url ? `<a href="${s.url}" target="_blank" style="color:var(--text);text-decoration:none;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${s.storeName||'-'}</a>` : (s.storeName||'-')}</td>
@@ -598,8 +598,8 @@
         <td style="color:var(--text2)">${s.days||'-'}</td>
         <td style="color:var(--text2)">${s.startDate||'-'}</td>
         <td style="color:var(--text2)">${s.endDate||'-'}</td>
-        <td>${s.status==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
         <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
+        <td>${s.status==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
         <td>${statusBadge[s.status]||s.status}
           ${s.status==='rejected' && s.rejectReason ? `<br><small style="color:var(--danger);font-size:10px">${s.rejectReason}</small>` : ''}
         </td>
