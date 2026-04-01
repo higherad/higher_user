@@ -562,6 +562,16 @@
       return true;
     });
 
+    // D-Day 순 정렬: active → endDate 오름차순, 나머지(만료/반려 등)는 뒤로
+    slots.sort((a, b) => {
+      const aActive = a.status === 'active';
+      const bActive = b.status === 'active';
+      if (aActive && !bActive) return -1;
+      if (!aActive && bActive) return 1;
+      if (aActive && bActive) return new Date(a.endDate) - new Date(b.endDate);
+      return new Date(b.createdAt||0) - new Date(a.createdAt||0);
+    });
+
     // 요약바 (내 캠페인 기준, active만)
     const activeSlots = mySlots.filter(s => {
       const d = new Date(s.endDate); d.setHours(0,0,0,0);
