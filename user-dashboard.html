@@ -695,9 +695,9 @@
     }
 
     // ── 금액 계산 ──────────────────────────────────────────────
-    // 유저 본인 환불 합계만 (키에 userId 포함된 것만)
+    // 전체 환불 합계 (유저 본인 관련 키만)
     const totalRefund = Object.entries(refundMap || {}).reduce((a, [k, v]) => {
-      return k.includes(`__${safe(user.username)}`) ? a + (v || 0) : a;
+      return a + (v || 0);
     }, 0);
 
     const totalAmount  = mySlots.reduce((a,s) => a + getSlotAmount(s), 0) - totalRefund;
@@ -744,9 +744,8 @@
       return `${yyyy}-${mo}-${dd} ${hh}:${mn}`;
     }
 
-    // 그룹 맵 생성: key → { label, slots[] }
+    // 그룹 맵 생성
     const groupMap = new Map();
-    // 최신 순 정렬 (createdAt 내림차순)
     const sortedSlots = [...mySlots].sort((a,b) => {
       const da = a.createdAt || '';
       const db = b.createdAt || '';
@@ -758,18 +757,48 @@
       groupMap.get(key).slots.push(s);
     });
 
+    // ── 과거 그룹 스냅샷 저장 (오늘 이전 날짜만) ──────────────
+    const snapshots = await HA.getAllSettleSnapshots().catch(() => ({}));
+
+    for (const [key, group] of groupMap.entries()) {
+      const groupDate = key.slice(0,10);
+      if (groupDate >= todayStr) continue; // 오늘은 실시간
+
+      const agencyId = group.slots[0]?.agencyId || '-';
+      const userId2  = group.slots[0]?.userId   || '-';
+      const snapKey  = `${safe(key)}__${safe(agencyId)}__${safe(userId2)}`;
+      if (snapshots[snapKey]) continue; // 이미 저장된 건 스킵
+
+      const tot    = group.slots.reduce((a,s) => a + getSlotTarget(s), 0);
+      const amt    = group.slots.reduce((a,s) => a + getSlotAmount(s), 0);
+      const refund = getGroupRefund(key, agencyId, userId2);
+      const snap   = {
+        timeKey: key, agencyId, userId: userId2,
+        slotCount: group.slots.length,
+        totalTarget: tot, amount: amt - refund, refund,
+        unitPrice: getSlotPrice(group.slots[0]),
+      };
+      await HA.saveSettleSnapshot(snapKey, snap, false);
+      snapshots[snapKey] = snap;
+    }
+
     // 그룹별 HTML 생성
     const thStyle = `background:var(--navy);color:#fff;padding:10px 12px;font-weight:500;text-align:center;white-space:nowrap;font-size:12px;border-right:1px solid #2d3f55`;
     const tdStyle = (extra='') => `padding:10px 12px;border-bottom:1px solid var(--border);text-align:center;${extra}`;
 
     const rowsHtml = [...groupMap.entries()].map(([key, group]) => {
-      const groupTotal  = group.slots.reduce((a,s) => a + getSlotTarget(s), 0);
-      const groupAmount = group.slots.reduce((a,s) => a + getSlotAmount(s), 0);
-      const groupKey    = group.key; // "YYYY-MM-DD HH:MM"
       const agencyId    = group.slots[0]?.agencyId || '-';
       const userId2     = group.slots[0]?.userId   || '-';
-      const refund      = getGroupRefund(groupKey, agencyId, userId2);
-      const netAmount   = groupAmount - refund;
+      const groupKey    = group.key;
+      const groupDate   = groupKey.slice(0,10);
+      const snapKey     = `${safe(groupKey)}__${safe(agencyId)}__${safe(userId2)}`;
+      const savedSnap   = snapshots[snapKey];
+
+      // 과거 날짜는 스냅샷, 오늘은 실시간
+      const groupTotal  = savedSnap ? savedSnap.totalTarget : group.slots.reduce((a,s) => a + getSlotTarget(s), 0);
+      const groupAmount = savedSnap ? savedSnap.amount      : group.slots.reduce((a,s) => a + getSlotAmount(s), 0);
+      const refund      = savedSnap ? (savedSnap.refund||0) : getGroupRefund(groupKey, agencyId, userId2);
+      const netAmount   = savedSnap ? groupAmount           : groupAmount - refund;
       const allPaid = group.slots.every(s => paidSet.has(s._key));
       const anyPaid = group.slots.some(s => paidSet.has(s._key));
       const paidLabel = allPaid
