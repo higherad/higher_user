@@ -1,11 +1,9 @@
 /**
- * HA-STORE.JS — Firebase Realtime Database 버전
- * localStorage → Firebase로 교체
- * 기존 코드와 인터페이스 동일 (async/await 방식으로 변경)
+ * HA-STORE.JS — Firebase Realtime Database 버전 (유저 사이트 전용)
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getDatabase, ref, set, get, push, update, remove, onValue }
+import { getDatabase, ref, set, get, push, update, remove }
   from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 // ── Firebase 초기화 ──────────────────────────────────────────
 const firebaseConfig = {
@@ -21,13 +19,6 @@ const firebaseConfig = {
 
 const app  = initializeApp(firebaseConfig);
 const db   = getDatabase(app);
-
-// ── 직원(Staff) 계정 설정 ────────────────────────────────────
-const STAFF_ACCOUNTS = [
-  { id: 'staff1', username: 'higherad1', password: 'hi1105', name: '주병주', role: 'staff' },
-  { id: 'staff2', username: 'kimpro', password: 'hi1234!!', name: '김태홍', role: 'staff' },
-  { id: 'staff3', username: 'dlgmlwn323', password: 'bawoo920', name: '이희주', role: 'staff' },
-];
 
 // ── 텔레그램 알림 설정 ────────────────────────────────────────
 const TELEGRAM = {
@@ -46,12 +37,8 @@ const PATHS = {
   notices:         'ha/notices',
   paid:            'ha/paid_slots',
   refunds:         'ha/refunds',
-  adClassify:      'ha/ad_classify',
   settleSnapshots: 'ha/settle_snapshots',
-  statusLog:       'ha/status_log',   // 담당자 상태 변경 이력
 };
-
-// STAFF_ACCOUNTS, TELEGRAM, ADMIN_PASSWORD, firebaseConfig → config.js 참조
 
 async function sendTelegram(message) {
   try {
@@ -73,8 +60,6 @@ async function sendTelegram(message) {
   }
 }
 
-// (배치 큐 제거 — 개별/엑셀 알림을 호출부에서 각각 처리)
-
 // ── 유틸: Firebase 스냅샷 → 배열 변환 ───────────────────────
 function snapToArray(snapshot) {
   if (!snapshot.exists()) return [];
@@ -90,8 +75,6 @@ function dispatch(event) {
 // ════════════════════════════════════════════════════════════
 const HA = {
 
-  SLOT_TYPES: ['리워드'],
-
   // ── 현재 로그인 유저 ───────────────────────────────────────
   getCurrentUser() {
     return JSON.parse(sessionStorage.getItem('ha_current_user') || 'null');
@@ -99,19 +82,6 @@ const HA = {
 
   // ── 로그인 ────────────────────────────────────────────────
   async login(username, password) {
-    // 어드민 계정
-    if (username === 'admin' && password === 'admin1234') {
-      const user = { id: 'admin', username: 'admin', role: 'admin', name: '박성진', agency: '-' };
-      sessionStorage.setItem('ha_current_user', JSON.stringify(user));
-      return { ok: true, user };
-    }
-    // 직원(staff) 계정
-    const staffMatch = STAFF_ACCOUNTS.find(s => s.username === username && s.password === password);
-    if (staffMatch) {
-      const user = { ...staffMatch };
-      sessionStorage.setItem('ha_current_user', JSON.stringify(user));
-      return { ok: true, user };
-    }
     // 일반 회원 — Firebase에서 조회
     try {
       const snapshot = await get(ref(db, PATHS.users));
@@ -244,47 +214,12 @@ const HA = {
     );
   },
 
-  async updateSlot(key, patch) {
-    await update(ref(db, `${PATHS.slots}/${key}`), patch);
-    // 상태(status) 변경이 포함된 경우 담당자 이력 누적 저장
-    if (patch.status !== undefined) {
-      const currentUser = this.getCurrentUser();
-      if (currentUser) {
-        const logEntry = {
-          slotKey:   key,
-          status:    patch.status,
-          staffId:   currentUser.username,
-          staffName: currentUser.name || currentUser.username,
-          role:      currentUser.role || 'unknown',
-          changedAt: new Date().toISOString(),
-          ...(patch.rejectReason ? { rejectReason: patch.rejectReason } : {}),
-        };
-        await push(ref(db, `${PATHS.statusLog}/${key}`), logEntry);
-      }
-    }
-    dispatch('ha:slots:updated');
-  },
-
-  async deleteSlot(key) {
-    await remove(ref(db, `${PATHS.slots}/${key}`));
-    dispatch('ha:slots:updated');
-  },
-
-  async approveSlot(key) {
-    await this.updateSlot(key, { status: 'active' });
-  },
-
-  async rejectSlot(key, reason = '') {
-    await this.updateSlot(key, { status: 'rejected', rejectReason: reason });
-  },
-
   // ════════════════════════════════════════════════════════
   // 회원 CRUD
   // ════════════════════════════════════════════════════════
 
   async getUsers() {
     const snapshot = await get(ref(db, PATHS.users));
-    if (!snapshot.exists()) return getDefaultUsers();
     return snapToArray(snapshot);
   },
 
@@ -311,45 +246,20 @@ const HA = {
     dispatch('ha:users:updated');
   },
 
-  async deleteUser(key) {
-    await remove(ref(db, `${PATHS.users}/${key}`));
-    dispatch('ha:users:updated');
-  },
-
   // ════════════════════════════════════════════════════════
-  // 공지사항 CRUD
+  // 공지사항
   // ════════════════════════════════════════════════════════
 
   async getNotices() {
     const snapshot = await get(ref(db, PATHS.notices));
-    if (!snapshot.exists()) return getDefaultNotices();
+    if (!snapshot.exists()) return [];
     return snapToArray(snapshot).sort((a, b) =>
       new Date(b.date) - new Date(a.date)
     );
   },
 
-  async addNotice(data) {
-    const n = {
-      title:   data.title   || '',
-      content: data.content || '',
-      author:  'admin',
-      date:    new Date().toISOString().replace('T', ' ').slice(0, 19),
-      views:   0,
-      pinned:  !!data.pinned,
-    };
-    const newRef = await push(ref(db, PATHS.notices), n);
-    dispatch('ha:notices:updated');
-    return { ...n, _key: newRef.key };
-  },
-
   async updateNotice(key, patch) {
     await update(ref(db, `${PATHS.notices}/${key}`), patch);
-    dispatch('ha:notices:updated');
-  },
-
-  async deleteNotice(key) {
-    await remove(ref(db, `${PATHS.notices}/${key}`));
-    dispatch('ha:notices:updated');
   },
 
   // ════════════════════════════════════════════════════════
@@ -362,14 +272,6 @@ const HA = {
     return new Set(Object.keys(snapshot.val()));
   },
 
-  async setPaid(key, val) {
-    if (val) {
-      await set(ref(db, `${PATHS.paid}/${key}`), true);
-    } else {
-      await remove(ref(db, `${PATHS.paid}/${key}`));
-    }
-  },
-
   // ════════════════════════════════════════════════════════
   // 환불 관리
   // ════════════════════════════════════════════════════════
@@ -380,21 +282,10 @@ const HA = {
     return snapshot.val();
   },
 
-  async setRefundAmount(key, amount) {
-    if (!amount || amount <= 0) {
-      await remove(ref(db, `${PATHS.refunds}/${key}`));
-    } else {
-      await set(ref(db, `${PATHS.refunds}/${key}`), amount);
-    }
-  },
-
   // ════════════════════════════════════════════════════════
-  // 정산 스냅샷 (과거 날짜 데이터 고정 저장)
-  // 경로: ha/settle_snapshots/{date}/{safeAgencyId}__{safeUserId}
+  // 정산 스냅샷
   // ════════════════════════════════════════════════════════
 
-  // 단일 행 스냅샷 저장
-  // snapKey: "safeTimeKey__safeAgencyId__safeUserId" 형태의 플랫 키
   async saveSettleSnapshot(snapKey, data, force = false) {
     const path = `${PATHS.settleSnapshots}/${snapKey}`;
     if (!force) {
@@ -404,14 +295,6 @@ const HA = {
     await set(ref(db, path), { ...data, savedAt: new Date().toISOString() });
   },
 
-  // 정산완료 취소 시 스냅샷 삭제
-  // snapKey: "safeTimeKey__safeAgencyId__safeUserId"
-  async deleteSettleSnapshot(snapKey) {
-    const path = `${PATHS.settleSnapshots}/${snapKey}`;
-    await remove(ref(db, path));
-  },
-
-  // 전체 settle_snapshots 로드 → { "safeTimeKey__safeAgencyId__safeUserId": snap } 형태
   async getAllSettleSnapshots() {
     const snap = await get(ref(db, PATHS.settleSnapshots));
     if (!snap.exists()) return {};
@@ -426,175 +309,9 @@ const HA = {
     return result;
   },
 
-  // ════════════════════════════════════════════════════════
-  // 대시보드 집계
-  // ════════════════════════════════════════════════════════
-
-  async getDashboardStats() {
-    const slots = await this.getSlots();
-    const today  = new Date(); today.setHours(0,0,0,0);
-    const in3    = new Date(today); in3.setDate(today.getDate() + 3);
-
-    const active   = slots.filter(s => s.status === 'active');
-    const pending  = slots.filter(s => s.status === 'pending');
-    const rejected = slots.filter(s => s.status === 'rejected');
-    const expiring = active.filter(s => {
-      const d = new Date(s.endDate);
-      return d <= in3 && d >= today;
-    });
-    const agencySet = new Set(active.map(s => s.agencyId));
-
-    return {
-      activeAgencies: agencySet.size,
-      activeSlots:    active.length,
-      expiringSoon:   expiring.length,
-      pending:        pending.length,
-      rejected:       rejected.length,
-    };
-  },
-
-  // ════════════════════════════════════════════════════════
-  // 실시간 리스너 (어드민 접수관리 배지 등에 사용)
-  // ════════════════════════════════════════════════════════
-
-  onSlotsChange(callback) {
-    return onValue(ref(db, PATHS.slots), snapshot => {
-      const slots = snapToArray(snapshot).sort((a, b) =>
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      callback(slots);
-    });
-  },
-
-  // 회원 실시간 리스너 (회원관리 배지용)
-  onUsersChange(callback) {
-    return onValue(ref(db, PATHS.users), snapshot => {
-      callback(snapToArray(snapshot));
-    });
-  },
-
-  // 정산 실시간 리스너 — slots + paid_slots 를 함께 구독해
-  // 정산관리 페이지와 동일하게 (접수일+대행사+유저ID) 단위로 묶은 뒤
-  // 그룹 전체가 미정산인 행의 개수를 콜백으로 전달
-  onSettlementsChange(callback) {
-    let latestSlots = [];
-    let latestPaid  = new Set();
-
-    function getMinuteKey(isoStr) {
-      if (!isoStr) return 'unknown';
-      const d = new Date(isoStr);
-      const yyyy = d.getFullYear();
-      const mo   = String(d.getMonth()+1).padStart(2,'0');
-      const dd   = String(d.getDate()).padStart(2,'0');
-      const hh   = String(d.getHours()).padStart(2,'0');
-      const mn   = String(d.getMinutes()).padStart(2,'0');
-      return `${yyyy}-${mo}-${dd} ${hh}:${mn}`;
-    }
-
-    function notify() {
-      // 정산관리.html의 groupByTimeAgency와 동일하게 분 단위 그룹핑
-      const base = latestSlots.filter(s =>
-        s.status === 'active' || s.status === 'expired' || s.status === 'pending'
-      );
-      const map = {};
-      base.forEach(s => {
-        const t = getMinuteKey(s.createdAt);
-        const k = `${t}||${s.agencyId || '-'}||${s.userId || '-'}`;
-        if (!map[k]) map[k] = { slots: [] };
-        map[k].slots.push(s);
-      });
-      // 그룹 중 캠페인이 하나라도 미정산이면 미정산 행으로 카운트
-      const unpaidRows = Object.values(map).filter(g =>
-        !g.slots.every(s => latestPaid.has(s._key))
-      );
-      callback(unpaidRows.length);
-    }
-
-    const unsubSlots = onValue(ref(db, PATHS.slots), snap => {
-      latestSlots = snapToArray(snap).sort((a, b) =>
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      notify();
-    });
-
-    const unsubPaid = onValue(ref(db, PATHS.paid), snap => {
-      latestPaid = snap.exists() ? new Set(Object.keys(snap.val())) : new Set();
-      notify();
-    });
-
-    return () => { unsubSlots(); unsubPaid(); };
-  },
-
-  // ════════════════════════════════════════════════════════
-  // 초기 데이터 시드 (Firebase가 비어있을 때 한 번만 실행)
-  // ════════════════════════════════════════════════════════
-
-  async seedIfEmpty() {
-    const noticeSnap = await get(ref(db, PATHS.notices));
-    if (!noticeSnap.exists()) {
-      const defaults = getDefaultNotices();
-      for (const n of defaults) {
-        await push(ref(db, PATHS.notices), n);
-      }
-    }
-    const userSnap = await get(ref(db, PATHS.users));
-    if (!userSnap.exists()) {
-      const defaults = getDefaultUsers();
-      for (const u of defaults) {
-        await push(ref(db, PATHS.users), u);
-      }
-    }
-  },
-
-  // ════════════════════════════════════════════════════════
-  // 광고 분류
-  // ════════════════════════════════════════════════════════
-
-  async getAdClassify() {
-    const snapshot = await get(ref(db, PATHS.adClassify));
-    if (!snapshot.exists()) return { groups: null, result: null };
-    return snapshot.val();
-  },
-
-  async saveAdClassifyGroups(groups) {
-    await set(ref(db, `${PATHS.adClassify}/groups`), groups);
-  },
-
-  async saveAdClassifyResult(result) {
-    // 최신 결과 저장
-    await set(ref(db, `${PATHS.adClassify}/result`), result);
-    // 일별 이력 저장 (yyMMdd 키)
-    const now = new Date(new Date().toLocaleString('en-US', {timeZone:'Asia/Seoul'}));
-    const yy  = String(now.getFullYear()).slice(2);
-    const mm  = String(now.getMonth()+1).padStart(2,'0');
-    const dd  = String(now.getDate()).padStart(2,'0');
-    const dateKey = yy+mm+dd;
-    await set(ref(db, `${PATHS.adClassify}/daily/${dateKey}`), result);
-  },
-
-  async getAdClassifyDaily() {
-    const snapshot = await get(ref(db, `${PATHS.adClassify}/daily`));
-    if (!snapshot.exists()) return {};
-    return snapshot.val(); // { "260323": result, "260324": result, ... }
-  },
-
 };
-
-// ── 기본 데이터 ───────────────────────────────────────────────
-function getDefaultNotices() {
-  return [];
-}
-
-function getDefaultUsers() {
-  return [
-    { username:'higher', password:'test1234', agency:'had1104', role:'member', unitPrice:50000, memo:'테스트 계정', createdAt:'2026-01-08' },
-  ];
-}
 
 // 전역 노출
 window.HA = HA;
-
-// 앱 시작 시 빈 DB면 기본 데이터 삽입
-HA.seedIfEmpty();
 
 export default HA;
