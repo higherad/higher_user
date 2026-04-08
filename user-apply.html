@@ -443,7 +443,11 @@
   function normalizeDateCell(value) {
     if (typeof value === 'number' && value > 0) {
       const d = new Date(Math.round((value - 25569) * 86400 * 1000));
-      return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+      if (Number.isNaN(d.getTime())) return '';
+      const yyyy = d.getFullYear();
+      const mo = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      return `${yyyy}-${mo}-${dd}`;
     }
     const raw = String(value || '').trim();
     if (!raw) return '';
@@ -468,7 +472,12 @@
   if (!user || user.role === 'admin') location.href = 'index.html';
 
   const today = new Date();
-  const fmt = d => d.toISOString().slice(0,10);
+  const fmt = d => {
+    const yyyy = d.getFullYear();
+    const mo = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${yyyy}-${mo}-${dd}`;
+  };
   const todayStr = fmt(today);
   // 시작일 기본값=오늘, min=오늘 (이전 날짜 선택 불가)
   const startEl = document.getElementById('f-startDate');
