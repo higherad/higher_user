@@ -706,7 +706,7 @@
 
     const totalAmount  = mySlots.reduce((a,s) => a + getSlotAmount(s), 0) - totalRefund;
     const paidAmount   = mySlots.filter(s => paidSet.has(s._key)).reduce((a,s) => a + getSlotAmount(s), 0) - totalRefund;
-    const unpaidAmount = mySlots.filter(s => !paidSet.has(s._key)).reduce((a,s) => a + getSlotAmount(s), 0);
+    const unpaidAmount = mySlots.filter(s => !paidSet.has(s._key)).reduce((a,s) => a + getSlotAmount(s), 0) - totalRefund;
 
     // 당월 정산 금액(VAT 별도) (접수일 기준 당월)
     const monthSlots = mySlots.filter(s => {
@@ -716,17 +716,7 @@
     });
     const monthAmount = monthSlots.reduce((a,s) => a + getSlotAmount(s), 0);
 
-    // 일 정산 금액(VAT 별도) (오늘 접수된 건만)
-    const todaySlots = mySlots.filter(s => {
-      if (!s.createdAt) return false;
-      const d = new Date(s.createdAt);
-      const yyyy2 = d.getFullYear();
-      const mo2 = String(d.getMonth()+1).padStart(2,'0');
-      const dd2 = String(d.getDate()).padStart(2,'0');
-      const sDate = `${yyyy2}-${mo2}-${dd2}`;
-      return sDate === todayStr;
-    });
-    const todayAmount = todaySlots.reduce((a,s) => a + getSlotAmount(s), 0);
+    // 일 정산 금액 — groupMap 빌드 후 계산 (하단 참조)
 
     // ── 접수 시간 단위로 그룹핑 ────────────────────────────────
     // createdAt (ISO string)을 분 단위로 그룹 (HH:MM 기준)
@@ -771,6 +761,19 @@
       if (!groupMap.has(key)) groupMap.set(key, { key, slots: [] });
       groupMap.get(key).slots.push(s);
     });
+
+    // 일 정산 금액(VAT 별도) — 오늘 그룹 실시간, 환불 반영
+    let todayAmount = 0;
+    let todaySlotCount = 0;
+    for (const [key, group] of groupMap.entries()) {
+      if (key.slice(0,10) !== todayStr) continue;
+      const agencyId = group.slots[0]?.agencyId || '-';
+      const userId2  = group.slots[0]?.userId   || '-';
+      const groupAmount = group.slots.reduce((a,s) => a + getSlotAmount(s), 0);
+      const refund = getGroupRefund(key, agencyId, userId2);
+      todayAmount += groupAmount - refund;
+      todaySlotCount += group.slots.length;
+    }
 
     // ── 과거 그룹 스냅샷 저장 (오늘 이전 날짜만) ──────────────
     const snapshots = await HA.getAllSettleSnapshots().catch(() => ({}));
@@ -866,7 +869,7 @@
           <div class="settle-card navy">
             <div class="settle-label">일 정산 금액(VAT 포함)</div>
             <div class="settle-value" style="color:var(--info)">${Math.round(todayAmount * 1.1).toLocaleString()}<span class="settle-unit">원</span></div>
-            <div style="font-size:11px;color:var(--text2);margin-top:6px">${todaySlots.length}건</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:6px">${todaySlotCount}건</div>
           </div>
           <div class="settle-card warn">
             <div class="settle-label">미정산 금액(VAT 포함)</div>
