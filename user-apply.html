@@ -190,13 +190,38 @@
 <body>
 
 <header>
-  <div class="header-logo" onclick="location.href='user-dashboard.html'">HIGHER <span>AD</span></div>
-  <div class="header-back" onclick="location.href='user-dashboard.html'">
-    <i data-lucide="arrow-left" size="14"></i> 대시보드로 돌아가기
+  <div class="header-logo" id="header-logo">HIGHER <span>AD</span></div>
+  <div id="header-right-member" class="header-back" onclick="location.href='user-dashboard.html'">
+    <i data-lucide="arrow-left" size="14"></i> <span>대시보드로 돌아가기</span>
+  </div>
+  <div id="header-right-super" class="header-back" style="display:none" onclick="doLogout()">
+    <i data-lucide="log-out" size="14"></i> <span>로그아웃</span>
   </div>
 </header>
 
 <div class="page-wrap">
+
+  <!-- 영업점 선택 (슈퍼유저 전용) -->
+  <div id="branch-selector-wrap" style="display:none;margin-bottom:20px;">
+    <div class="form-card" style="padding:24px 32px;border:2px solid var(--accent);background:rgba(16,185,129,.03);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i data-lucide="building-2" size="18" style="color:var(--accent)"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--navy);">영업점 선택</div>
+          <div style="font-size:12px;color:var(--text2);">캠페인을 접수할 영업점을 선택해주세요.</div>
+        </div>
+      </div>
+      <select id="branch-select" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:.2s;" onchange="onBranchChange()">
+        <option value="">-- 영업점을 선택해주세요 --</option>
+      </select>
+      <div id="branch-info" style="display:none;margin-top:12px;padding:10px 16px;background:#f1f5f9;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;">
+        <i data-lucide="check-circle" size="14" style="color:var(--accent);flex-shrink:0"></i>
+        <span id="branch-info-text"></span>
+      </div>
+    </div>
+  </div>
 
   <!-- 탭 선택 -->
   <div class="tab-bar">
@@ -338,7 +363,7 @@
         </div>
         <div class="success-actions">
           <button class="btn-ghost" onclick="resetForm()" style="font-family:inherit">추가 캠페인 신청</button>
-          <button class="btn-next" onclick="location.href='user-dashboard.html'" style="font-family:inherit">
+          <button class="btn-next" id="single-done-dashboard-btn" onclick="location.href='user-dashboard.html'" style="font-family:inherit">
             <i data-lucide="layout-dashboard" size="15"></i> 대시보드로 이동
           </button>
         </div>
@@ -412,7 +437,7 @@
         <div class="success-desc" id="excel-done-desc"></div>
         <div class="success-actions">
           <button class="btn-ghost" onclick="resetExcelFull()" style="font-family:inherit">추가 업로드</button>
-          <button class="btn-next" onclick="location.href='user-dashboard.html'" style="font-family:inherit">
+          <button class="btn-next" id="excel-done-dashboard-btn" onclick="location.href='user-dashboard.html'" style="font-family:inherit">
             <i data-lucide="layout-dashboard" size="15"></i> 대시보드로 이동
           </button>
         </div>
@@ -469,7 +494,64 @@
 
   // ── 인증 확인 ─────────────────────────────────────────────
   const user = HA.getCurrentUser();
-  if (!user || user.role === 'admin') location.href = 'index.html';
+  if (!user || user.role === 'admin' || user.role === 'staff') location.href = 'index.html';
+
+  const isSuper = user.role === 'super';
+
+  // ── 슈퍼유저 UI 세팅 ──────────────────────────────────────
+  let selectedBranch = null; // { username, agency, unitPrice, _key }
+
+  if (isSuper) {
+    // 헤더
+    document.getElementById('header-logo').style.cursor = 'default';
+    document.getElementById('header-right-member').style.display = 'none';
+    document.getElementById('header-right-super').style.display  = 'flex';
+
+    // 영업점 선택 박스 표시
+    document.getElementById('branch-selector-wrap').style.display = 'block';
+
+    // 완료 화면 대시보드 버튼 숨김
+    document.getElementById('single-done-dashboard-btn').style.display = 'none';
+    document.getElementById('excel-done-dashboard-btn').style.display  = 'none';
+
+    // 회원 목록 로드 → 셀렉트 채우기
+    try {
+      const users = await HA.getUsers();
+      const members = users
+        .filter(u => u.role !== 'admin' && u.role !== 'staff' && u.role !== 'super' && u.approved !== false)
+        .sort((a, b) => (a.agency || a.username).localeCompare(b.agency || b.username, 'ko'));
+      const sel = document.getElementById('branch-select');
+      members.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u._key;
+        opt.textContent = `${u.agency || u.username}  (${u.username})`;
+        opt.dataset.userJson = JSON.stringify(u);
+        sel.appendChild(opt);
+      });
+    } catch(e) {
+      console.warn('영업점 목록 로드 실패', e);
+    }
+  }
+
+  window.onBranchChange = function() {
+    const sel = document.getElementById('branch-select');
+    const opt = sel.options[sel.selectedIndex];
+    const infoEl = document.getElementById('branch-info');
+    const infoText = document.getElementById('branch-info-text');
+    if (opt.value) {
+      selectedBranch = JSON.parse(opt.dataset.userJson);
+      infoEl.style.display = 'flex';
+      infoText.innerHTML = `<strong>${selectedBranch.agency || selectedBranch.username}</strong> 으로 접수됩니다 &nbsp;·&nbsp; 단가: <strong>${(selectedBranch.unitPrice || 0).toLocaleString()}원</strong>`;
+    } else {
+      selectedBranch = null;
+      infoEl.style.display = 'none';
+    }
+  };
+
+  window.doLogout = function() {
+    HA.logout();
+    location.href = 'index.html';
+  };
 
   const today = new Date();
   const fmt = d => {
@@ -614,14 +696,20 @@
 
   // ── 단건 제출 ─────────────────────────────────────────────
   window.submitSingle = async () => {
+    if (isSuper && !selectedBranch) {
+      alert('영업점을 먼저 선택해주세요.');
+      return;
+    }
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     btn.innerHTML = '처리 중...';
+    const targetAgencyId = isSuper ? (selectedBranch.agency || selectedBranch.username) : (user.agency || user.username);
+    const targetUserId   = isSuper ? selectedBranch.username : user.username;
     try {
       const normalizedUrl = normalizeUrlForAdmin(document.getElementById('f-url').value);
       const result = await HA.addSlot({
-        agencyId:      user.agency || user.username,
-        userId:        user.username,
+        agencyId:      targetAgencyId,
+        userId:        targetUserId,
         slotType:      '리워드',
         storeName:     document.getElementById('f-storeName').value,
         rankKeyword:   document.getElementById('f-rankKeyword').value,
@@ -784,8 +872,15 @@
 
   // ── 일괄 제출 ─────────────────────────────────────────────
   window.submitExcel = async () => {
+    if (isSuper && !selectedBranch) {
+      alert('영업점을 먼저 선택해주세요.');
+      return;
+    }
     const validRows = excelRows.filter(r => r.valid);
     if (!validRows.length) return alert('접수 가능한 데이터가 없습니다.');
+
+    const excelAgencyId = isSuper ? (selectedBranch.agency || selectedBranch.username) : (user.agency || user.username);
+    const excelUserId   = isSuper ? selectedBranch.username : user.username;
 
     const btn = document.getElementById('excel-submit-btn');
     btn.disabled = true;
@@ -798,8 +893,8 @@
     for (const row of validRows) {
       try {
         const result = await HA.addSlot({
-          agencyId:    user.agency || user.username,
-          userId:      user.username,
+          agencyId:    excelAgencyId,
+          userId:      excelUserId,
           slotType:    '리워드',
           storeName:   row.storeName,
           rankKeyword: row.rankKeyword,

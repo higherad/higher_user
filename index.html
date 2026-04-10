@@ -124,9 +124,10 @@
   // URL에서 파일명 숨기기 — 항상 / 로만 표시
   history.replaceState(null, '', '/');
 
-  // 이미 로그인된 경우 바로 이동 (member 역할만)
+  // 이미 로그인된 경우 바로 이동
   const cur = HA.getCurrentUser();
   if (cur && cur.role === 'member') location.href = 'user-dashboard.html';
+  if (cur && cur.role === 'super')  location.href = 'user-apply.html';
 
   window.switchTab = function(tab) {
     ['login','signup'].forEach(t => {
@@ -164,6 +165,8 @@
     if (result.ok) {
       if (result.user.role === 'admin' || result.user.role === 'staff') {
         location.href = 'admin-login.html';
+      } else if (result.user.role === 'super') {
+        location.href = 'user-apply.html';
       } else {
         location.href = 'user-dashboard.html';
       }
