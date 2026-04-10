@@ -213,10 +213,22 @@
           <div style="font-size:12px;color:var(--text2);">캠페인을 접수할 영업점을 선택해주세요.</div>
         </div>
       </div>
-      <select id="branch-select" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:.2s;" onchange="onBranchChange()">
-        <option value="">-- 영업점을 선택해주세요 --</option>
-      </select>
-      <div id="branch-info" style="display:none;margin-top:12px;padding:10px 16px;background:#f1f5f9;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;">
+      <!-- 검색 가능한 커스텀 드롭다운 -->
+      <div id="branch-dropdown" style="position:relative;">
+        <div id="branch-input-wrap" style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:9px;background:#fff;transition:.2s;cursor:text;" onclick="openBranchDropdown()">
+          <i data-lucide="search" size="15" style="color:var(--muted);flex-shrink:0;margin-left:14px;"></i>
+          <input id="branch-search" type="text" placeholder="영업점명 또는 아이디 검색..."
+            style="flex:1;padding:11px 10px;border:none;outline:none;font-size:14px;font-family:inherit;color:var(--text);background:transparent;cursor:text;"
+            oninput="filterBranchList()" onfocus="openBranchDropdown()" autocomplete="off">
+          <div id="branch-clear-btn" style="display:none;padding:0 12px;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;" onclick="clearBranchSelection(event)">×</div>
+          <i data-lucide="chevron-down" id="branch-chevron" size="16" style="color:var(--muted);margin-right:12px;flex-shrink:0;transition:.2s;"></i>
+        </div>
+        <div id="branch-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--accent);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:200;max-height:240px;overflow-y:auto;">
+          <div id="branch-list-inner"></div>
+          <div id="branch-no-result" style="display:none;padding:14px 16px;font-size:13px;color:var(--muted);text-align:center;">검색 결과가 없습니다.</div>
+        </div>
+      </div>
+      <div id="branch-info" style="display:none;margin-top:12px;padding:10px 16px;background:#f1f5f9;border-radius:8px;font-size:13px;align-items:center;gap:8px;">
         <i data-lucide="check-circle" size="14" style="color:var(--accent);flex-shrink:0"></i>
         <span id="branch-info-text"></span>
       </div>
@@ -501,6 +513,115 @@
   // ── 슈퍼유저 UI 세팅 ──────────────────────────────────────
   let selectedBranch = null; // { username, agency, unitPrice, _key }
 
+  // ── 커스텀 검색 드롭다운 ──────────────────────────────────
+  let branchMembers = []; // 전체 영업점 배열
+  let dropdownOpen  = false;
+
+  function setBranchInputFocusStyle(focused) {
+    const wrap = document.getElementById('branch-input-wrap');
+    wrap.style.borderColor  = focused ? 'var(--accent)' : 'var(--border)';
+    wrap.style.boxShadow    = focused ? '0 0 0 3px rgba(16,185,129,.1)' : 'none';
+    const chevron = document.getElementById('branch-chevron');
+    chevron.style.transform = focused ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+
+  window.openBranchDropdown = function() {
+    if (dropdownOpen) return;
+    dropdownOpen = true;
+    setBranchInputFocusStyle(true);
+    renderBranchList(document.getElementById('branch-search').value);
+    document.getElementById('branch-list').style.display = 'block';
+    document.getElementById('branch-search').focus();
+  };
+
+  window.filterBranchList = function() {
+    renderBranchList(document.getElementById('branch-search').value);
+  };
+
+  function renderBranchList(query) {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? branchMembers.filter(u =>
+          (u.agency  || '').toLowerCase().includes(q) ||
+          (u.username|| '').toLowerCase().includes(q)
+        )
+      : branchMembers;
+
+    const inner   = document.getElementById('branch-list-inner');
+    const noResult= document.getElementById('branch-no-result');
+
+    if (!filtered.length) {
+      inner.innerHTML = '';
+      noResult.style.display = 'block';
+      return;
+    }
+    noResult.style.display = 'none';
+    inner.innerHTML = filtered.map(u => {
+      const label = u.agency || u.username;
+      const sub   = u.username;
+      const isSelected = selectedBranch && selectedBranch._key === u._key;
+      return `<div class="branch-option${isSelected ? ' selected' : ''}"
+                   data-key="${u._key}"
+                   onclick="selectBranch('${u._key}')"
+                   style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center;transition:.15s;${isSelected?'background:rgba(16,185,129,.08);color:var(--accent);font-weight:700;':''}">
+                <span>${label} <span style="color:var(--muted);font-weight:400;font-size:12px">(${sub})</span></span>
+                ${isSelected ? '<i data-lucide="check" size="13"></i>' : ''}
+              </div>`;
+    }).join('');
+    lucide.createIcons();
+  }
+
+  window.selectBranch = function(key) {
+    selectedBranch = branchMembers.find(u => u._key === key) || null;
+    closeBranchDropdown();
+
+    const infoEl   = document.getElementById('branch-info');
+    const infoText = document.getElementById('branch-info-text');
+    const searchEl = document.getElementById('branch-search');
+    const clearBtn = document.getElementById('branch-clear-btn');
+
+    if (selectedBranch) {
+      const label = selectedBranch.agency || selectedBranch.username;
+      searchEl.value            = `${label}  (${selectedBranch.username})`;
+      searchEl.style.color      = 'var(--text)';
+      clearBtn.style.display    = 'block';
+      infoEl.style.display      = 'flex';
+      infoText.innerHTML        = `<strong>${label}</strong> 으로 접수됩니다 &nbsp;·&nbsp; 단가: <strong>${(selectedBranch.unitPrice || 0).toLocaleString()}원</strong>`;
+    }
+  };
+
+  window.clearBranchSelection = function(e) {
+    e.stopPropagation();
+    selectedBranch = null;
+    document.getElementById('branch-search').value      = '';
+    document.getElementById('branch-clear-btn').style.display = 'none';
+    document.getElementById('branch-info').style.display      = 'none';
+    setBranchInputFocusStyle(false);
+  };
+
+  function closeBranchDropdown() {
+    dropdownOpen = false;
+    document.getElementById('branch-list').style.display = 'none';
+    setBranchInputFocusStyle(false);
+  }
+
+  // 외부 클릭 시 닫기
+  document.addEventListener('click', e => {
+    if (!document.getElementById('branch-dropdown').contains(e.target)) {
+      closeBranchDropdown();
+    }
+  });
+
+  // 옵션 위 hover 스타일 (동적이라 이벤트 위임)
+  document.getElementById('branch-list-inner').addEventListener('mouseover', e => {
+    const opt = e.target.closest('.branch-option');
+    if (opt && !opt.classList.contains('selected')) opt.style.background = '#f8fafc';
+  });
+  document.getElementById('branch-list-inner').addEventListener('mouseout', e => {
+    const opt = e.target.closest('.branch-option');
+    if (opt && !opt.classList.contains('selected')) opt.style.background = '';
+  });
+
   if (isSuper) {
     // 헤더
     document.getElementById('header-logo').style.cursor = 'default';
@@ -514,39 +635,16 @@
     document.getElementById('single-done-dashboard-btn').style.display = 'none';
     document.getElementById('excel-done-dashboard-btn').style.display  = 'none';
 
-    // 회원 목록 로드 → 셀렉트 채우기
+    // 회원 목록 로드
     try {
       const users = await HA.getUsers();
-      const members = users
+      branchMembers = users
         .filter(u => u.role !== 'admin' && u.role !== 'staff' && u.role !== 'super' && u.approved !== false)
         .sort((a, b) => (a.agency || a.username).localeCompare(b.agency || b.username, 'ko'));
-      const sel = document.getElementById('branch-select');
-      members.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u._key;
-        opt.textContent = `${u.agency || u.username}  (${u.username})`;
-        opt.dataset.userJson = JSON.stringify(u);
-        sel.appendChild(opt);
-      });
     } catch(e) {
       console.warn('영업점 목록 로드 실패', e);
     }
   }
-
-  window.onBranchChange = function() {
-    const sel = document.getElementById('branch-select');
-    const opt = sel.options[sel.selectedIndex];
-    const infoEl = document.getElementById('branch-info');
-    const infoText = document.getElementById('branch-info-text');
-    if (opt.value) {
-      selectedBranch = JSON.parse(opt.dataset.userJson);
-      infoEl.style.display = 'flex';
-      infoText.innerHTML = `<strong>${selectedBranch.agency || selectedBranch.username}</strong> 으로 접수됩니다 &nbsp;·&nbsp; 단가: <strong>${(selectedBranch.unitPrice || 0).toLocaleString()}원</strong>`;
-    } else {
-      selectedBranch = null;
-      infoEl.style.display = 'none';
-    }
-  };
 
   window.doLogout = function() {
     HA.logout();
