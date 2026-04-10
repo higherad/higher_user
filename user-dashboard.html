@@ -308,6 +308,24 @@
     .profile-msg { font-size:12px;padding:10px 14px;border-radius:8px;margin-top:12px;display:none; }
     .profile-msg.success { background:rgba(16,185,129,.08);color:#059669;border-left:3px solid var(--accent);display:block; }
     .profile-msg.error   { background:rgba(239,68,68,.06);color:var(--danger);border-left:3px solid var(--danger);display:block; }
+
+    /* ── 페이지네이션 ── */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 4px; padding: 16px 0;
+    }
+    .pg-btn {
+      min-width: 32px; height: 32px; padding: 0 8px;
+      border: 1px solid var(--border); border-radius: 7px;
+      background: var(--card); color: var(--text2);
+      font-size: 13px; font-family: inherit; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: .15s;
+    }
+    .pg-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .pg-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+    .pg-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .pg-info { font-size: 12px; color: var(--text2); padding: 0 8px; }
   </style>
 </head>
 <body>
@@ -395,11 +413,13 @@
       </button>
     </div>
     <div class="table-wrap" id="slots-table"></div>
+    <div id="slots-pagination"></div>
   </div>
 
   <!-- ── 정산 탭 ── -->
   <div class="tab-content" id="content-settle">
-    <div class="notice-list" id="settle-list"></div>
+    <div id="settle-list"></div>
+    <div id="settle-pagination"></div>
   </div>
 
   <!-- ── 공지사항 탭 ── -->
@@ -536,7 +556,13 @@
   }
 
   // ── 내 캠페인 전체 렌더 ───────────────────────────────────────
-  window.renderMySlots = async function() {
+  let slotsPage = 1;
+  const SLOTS_PER_PAGE = 20;
+
+  window.renderMySlots = async function(page) {
+    if (page === undefined) { slotsPage = 1; } // 필터 변경 시 1페이지로 리셋
+    else { slotsPage = page; }
+
     const status = document.getElementById('f-status').value;
     const range  = document.getElementById('f-range').value;
     const kw     = (document.getElementById('f-kw').value||'').toLowerCase();
@@ -588,20 +614,28 @@
     sumEl.innerHTML = summaryItems;
 
     const tbl = document.getElementById('slots-table');
+    const pgEl = document.getElementById('slots-pagination');
+
     if (!slots.length) {
       tbl.innerHTML = `<div class="empty-state">
         <i data-lucide="search-x" size="40" style="color:var(--muted)"></i>
         <p>조건에 맞는 캠페인이 없습니다.</p>
       </div>`;
+      pgEl.innerHTML = '';
       lucide.createIcons(); return;
     }
+
+    const totalPages = Math.ceil(slots.length / SLOTS_PER_PAGE);
+    if (slotsPage > totalPages) slotsPage = totalPages;
+    const start = (slotsPage - 1) * SLOTS_PER_PAGE;
+    const pageSlots = slots.slice(start, start + SLOTS_PER_PAGE);
 
     tbl.innerHTML = `<table>
       <thead><tr>
         <th>플레이스명</th><th>MID</th><th>순위키워드</th>
         <th>일 수</th><th>시작일</th><th>종료일</th><th>일 목표</th><th>D-Day</th><th>상태</th>
       </tr></thead>
-      <tbody>${slots.map(s => `<tr>
+      <tbody>${pageSlots.map(s => `<tr>
         <td style="font-weight:500">${s.url ? `<a href="${s.url}" target="_blank" style="color:var(--text);text-decoration:none;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${s.storeName||'-'}</a>` : (s.storeName||'-')}</td>
         <td style="color:var(--text2);font-size:11px">${s.mid||'-'}</td>
         <td style="color:var(--text2)">${s.rankKeyword||'-'}</td>
@@ -615,6 +649,25 @@
         </td>
       </tr>`).join('')}
       </tbody></table>`;
+
+    // 페이지네이션 렌더
+    if (totalPages <= 1) {
+      pgEl.innerHTML = '';
+    } else {
+      const maxBtns = 7;
+      let startPage = Math.max(1, slotsPage - Math.floor(maxBtns / 2));
+      let endPage   = Math.min(totalPages, startPage + maxBtns - 1);
+      if (endPage - startPage < maxBtns - 1) startPage = Math.max(1, endPage - maxBtns + 1);
+
+      let btns = `<button class="pg-btn" onclick="renderMySlots(${slotsPage-1})" ${slotsPage===1?'disabled':''}>‹</button>`;
+      for (let p = startPage; p <= endPage; p++) {
+        btns += `<button class="pg-btn${p===slotsPage?' active':''}" onclick="renderMySlots(${p})">${p}</button>`;
+      }
+      btns += `<button class="pg-btn" onclick="renderMySlots(${slotsPage+1})" ${slotsPage===totalPages?'disabled':''}>›</button>`;
+
+      pgEl.innerHTML = `<div class="pagination">${btns}</div>`;
+    }
+
     lucide.createIcons();
   }
 
@@ -648,7 +701,12 @@
   }
 
   // ── 정산 렌더 ─────────────────────────────────────────────
-  window.renderSettle = async function() {
+  let settlePage = 1;
+  const SETTLE_PER_PAGE = 20;
+
+  window.renderSettle = async function(page) {
+    if (page !== undefined) settlePage = page;
+    else settlePage = 1;
     const settleList = document.getElementById('settle-list');
     if (!settleList) return;
     settleList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">불러오는 중...</div>';
@@ -804,7 +862,14 @@
     const thStyle = `background:var(--navy);color:#fff;padding:10px 12px;font-weight:500;text-align:center;white-space:nowrap;font-size:12px;border-right:1px solid #2d3f55`;
     const tdStyle = (extra='') => `padding:10px 12px;border-bottom:1px solid var(--border);text-align:center;${extra}`;
 
-    const rowsHtml = [...groupMap.entries()].map(([key, group]) => {
+    const allGroups = [...groupMap.entries()];
+    const settleTotal = allGroups.length;
+    const settleTotalPages = Math.ceil(settleTotal / SETTLE_PER_PAGE);
+    if (settlePage > settleTotalPages) settlePage = Math.max(1, settleTotalPages);
+    const settleStart = (settlePage - 1) * SETTLE_PER_PAGE;
+    const pageGroups = allGroups.slice(settleStart, settleStart + SETTLE_PER_PAGE);
+
+    const rowsHtml = pageGroups.map(([key, group]) => {
       const agencyId    = group.slots[0]?.agencyId || '-';
       const userId2     = group.slots[0]?.userId   || '-';
       const groupKey    = group.key;
@@ -881,6 +946,26 @@
       <div style="padding:0 20px 20px">
         ${groupsHtml || `<div style="padding:60px;text-align:center;color:var(--muted)">정산 데이터가 없습니다.</div>`}
       </div>`;
+
+    // 정산 페이지네이션
+    const pgEl = document.getElementById('settle-pagination');
+    if (pgEl) {
+      if (settleTotalPages <= 1) {
+        pgEl.innerHTML = '';
+      } else {
+        const maxBtns = 7;
+        let sp = Math.max(1, settlePage - Math.floor(maxBtns / 2));
+        let ep = Math.min(settleTotalPages, sp + maxBtns - 1);
+        if (ep - sp < maxBtns - 1) sp = Math.max(1, ep - maxBtns + 1);
+
+        let btns = `<button class="pg-btn" onclick="renderSettle(${settlePage-1})" ${settlePage===1?'disabled':''}>‹</button>`;
+        for (let p = sp; p <= ep; p++) {
+          btns += `<button class="pg-btn${p===settlePage?' active':''}" onclick="renderSettle(${p})">${p}</button>`;
+        }
+        btns += `<button class="pg-btn" onclick="renderSettle(${settlePage+1})" ${settlePage===settleTotalPages?'disabled':''}>›</button>`;
+        pgEl.innerHTML = `<div class="pagination">${btns}</div>`;
+      }
+    }
 
     lucide.createIcons();
   };
