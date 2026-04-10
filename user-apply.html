@@ -223,10 +223,6 @@
           <div id="branch-clear-btn" style="display:none;padding:0 12px;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;" onclick="clearBranchSelection(event)">×</div>
           <i data-lucide="chevron-down" id="branch-chevron" size="16" style="color:var(--muted);margin-right:12px;flex-shrink:0;transition:.2s;"></i>
         </div>
-        <div id="branch-list" style="display:none;position:fixed;background:#fff;border:1.5px solid var(--accent);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:9999;max-height:240px;overflow-y:auto;">
-          <div id="branch-list-inner"></div>
-          <div id="branch-no-result" style="display:none;padding:14px 16px;font-size:13px;color:var(--muted);text-align:center;">검색 결과가 없습니다.</div>
-        </div>
       </div>
       <div id="branch-info" style="display:none;margin-top:12px;padding:10px 16px;background:#f1f5f9;border-radius:8px;font-size:13px;align-items:center;gap:8px;">
         <i data-lucide="check-circle" size="14" style="color:var(--accent);flex-shrink:0"></i>
@@ -1091,5 +1087,11 @@
   // ── 초기화 ────────────────────────────────────────────────
   lucide.createIcons();
 </script>
+
+<!-- 영업점 드롭다운 리스트 — body 직속으로 위치해야 transform 부모 영향 안 받음 -->
+<div id="branch-list" style="display:none;position:fixed;background:#fff;border:1.5px solid var(--accent);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:9999;max-height:240px;overflow-y:auto;">
+  <div id="branch-list-inner"></div>
+  <div id="branch-no-result" style="display:none;padding:14px 16px;font-size:13px;color:var(--muted);text-align:center;">검색 결과가 없습니다.</div>
+</div>
 </body>
 </html>
