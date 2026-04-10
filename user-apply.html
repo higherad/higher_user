@@ -544,12 +544,27 @@
     renderBranchList(document.getElementById('branch-search').value);
   };
 
+  // ── 초성 검색 헬퍼 ───────────────────────────────────────
+  const CHOSEONG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  function toChoseong(str) {
+    return [...str].map(ch => {
+      const code = ch.charCodeAt(0);
+      if (code >= 0xAC00 && code <= 0xD7A3)
+        return CHOSEONG[Math.floor((code - 0xAC00) / 588)];
+      return ch;
+    }).join('');
+  }
+  function matchSearch(target, q) {
+    const t = target.toLowerCase();
+    return t.includes(q) || toChoseong(t).includes(q);
+  }
+
   function renderBranchList(query) {
     const q = query.trim().toLowerCase();
     const filtered = q
       ? branchMembers.filter(u =>
-          (u.agency  || '').toLowerCase().includes(q) ||
-          (u.username|| '').toLowerCase().includes(q)
+          matchSearch(u.agency   || '', q) ||
+          matchSearch(u.username || '', q)
         )
       : branchMembers;
 
