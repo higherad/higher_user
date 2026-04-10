@@ -223,7 +223,7 @@
           <div id="branch-clear-btn" style="display:none;padding:0 12px;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;" onclick="clearBranchSelection(event)">×</div>
           <i data-lucide="chevron-down" id="branch-chevron" size="16" style="color:var(--muted);margin-right:12px;flex-shrink:0;transition:.2s;"></i>
         </div>
-        <div id="branch-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--accent);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:200;max-height:240px;overflow-y:auto;">
+        <div id="branch-list" style="display:none;position:fixed;background:#fff;border:1.5px solid var(--accent);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:9999;max-height:240px;overflow-y:auto;">
           <div id="branch-list-inner"></div>
           <div id="branch-no-result" style="display:none;padding:14px 16px;font-size:13px;color:var(--muted);text-align:center;">검색 결과가 없습니다.</div>
         </div>
@@ -525,11 +525,21 @@
     chevron.style.transform = focused ? 'rotate(180deg)' : 'rotate(0deg)';
   }
 
+  function positionBranchList() {
+    const wrap = document.getElementById('branch-input-wrap');
+    const list = document.getElementById('branch-list');
+    const rect = wrap.getBoundingClientRect();
+    list.style.top   = (rect.bottom + 4) + 'px';
+    list.style.left  = rect.left + 'px';
+    list.style.width = rect.width + 'px';
+  }
+
   window.openBranchDropdown = function() {
     if (dropdownOpen) return;
     dropdownOpen = true;
     setBranchInputFocusStyle(true);
     renderBranchList(document.getElementById('branch-search').value);
+    positionBranchList();
     document.getElementById('branch-list').style.display = 'block';
     document.getElementById('branch-search').focus();
   };
@@ -607,10 +617,16 @@
 
   // 외부 클릭 시 닫기
   document.addEventListener('click', e => {
-    if (!document.getElementById('branch-dropdown').contains(e.target)) {
+    const dropdown = document.getElementById('branch-dropdown');
+    const list     = document.getElementById('branch-list');
+    if (!dropdown.contains(e.target) && !list.contains(e.target)) {
       closeBranchDropdown();
     }
   });
+
+  // 스크롤·리사이즈 시 위치 재계산
+  window.addEventListener('scroll', () => { if (dropdownOpen) positionBranchList(); }, true);
+  window.addEventListener('resize', () => { if (dropdownOpen) positionBranchList(); });
 
   // 옵션 위 hover 스타일 (동적이라 이벤트 위임)
   document.getElementById('branch-list-inner').addEventListener('mouseover', e => {
