@@ -94,9 +94,9 @@ const HA = {
     }
   },
 
-  async logout() {
+  logout() {
     sessionStorage.removeItem('ha_current_user');
-    try { await signOut(auth); } catch (_) {}
+    signOut(auth).catch(() => {});
   },
 
   // ════════════════════════════════════════════════════════
@@ -250,11 +250,7 @@ const HA = {
 
   async updateUser(key, patch) {
     if (patch.password) {
-      try {
-        await updatePassword(auth.currentUser, patch.password);
-      } catch (e) {
-        console.warn('Firebase Auth 비밀번호 업데이트 실패:', e);
-      }
+      await updatePassword(auth.currentUser, patch.password);
       const { password: _, ...rtdbPatch } = patch;
       await update(ref(db, `${PATHS.users}/${key}`), rtdbPatch);
     } else {
