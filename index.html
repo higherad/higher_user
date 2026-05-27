@@ -136,12 +136,11 @@
     });
   };
 
-  document.getElementById('inp-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('inp-id').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inp-pw').focus(); });
   document.getElementById('su-pw2').addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
-    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    if (e.target.id === 'inp-id') return;
     const loginActive = document.getElementById('content-login').classList.contains('active');
     if (loginActive) doLogin();
     else doSignup();
