@@ -694,10 +694,11 @@
 
   // ── 탭 전환 ───────────────────────────────────────────────
   window.switchMode = function(mode) {
-    document.getElementById('mode-single').style.display = mode==='single' ? 'block' : 'none';
-    document.getElementById('mode-excel').style.display  = mode==='excel'  ? 'block' : 'none';
-    document.getElementById('tab-single').classList.toggle('active', mode==='single');
-    document.getElementById('tab-excel').classList.toggle('active',  mode==='excel');
+    const single = mode === 'single';
+    document.getElementById('mode-single').style.display = single ? 'block' : 'none';
+    document.getElementById('mode-excel').style.display  = single ? 'none'  : 'block';
+    document.getElementById('tab-single').classList.toggle('active',  single);
+    document.getElementById('tab-excel').classList.toggle('active',  !single);
   };
 
   // ── 스텝 UI ───────────────────────────────────────────────
@@ -774,7 +775,8 @@
         urlErrEl.style.display = 'block';
         ok = false;
       } else {
-
+        document.getElementById('f-url').classList.remove('error');
+        urlErrEl.style.display = 'none';
       }
     }
 
@@ -899,6 +901,7 @@
     const reader = new FileReader();
     reader.onload = e => {
       try {
+        const uploadTodayStr = fmt(new Date()); // 업로드 시점 날짜 (자정 넘김 대응)
         // cellDates:false 로 읽어서 날짜 시리얼을 직접 처리 (인덱스 밀림 방지)
         const wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -926,7 +929,6 @@
           }
 
           // ── 항목별 유효성 검사 ────────────────────────────────
-          const today_str = fmt(new Date());
           const errors = [];
           const urlMid = url ? extractMidFromUrl(url) : null;
           if (!storeName)                                  errors.push('업체명 누락');
@@ -935,7 +937,7 @@
           if (!rankKeyword)                                errors.push('순위키워드 누락');
           if (days === null || isNaN(days) || days <= 0)   errors.push('일 수 누락');
           if (!startDate)                                  errors.push('시작일 형식 오류');
-          else if (startDate < today_str)                  errors.push('오늘 이전 시작일');
+          else if (startDate < uploadTodayStr)               errors.push('오늘 이전 시작일');
           if (!mid)                                        errors.push('MID 누락');
           if (mid && urlMid && mid !== urlMid)             errors.push('URL MID와 입력 MID 불일치');
           if (dailyTarget === null || isNaN(dailyTarget))  errors.push('일 목표 누락');

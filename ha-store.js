@@ -37,6 +37,14 @@ const PATHS = {
   settleSnapshots: 'ha/settle_snapshots',
 };
 
+async function getUserUnitPrice(userId) {
+  try {
+    const uSnap = await get(ref(db, PATHS.users));
+    const u = snapToArray(uSnap).find(u => u.username === (userId || ''));
+    return u ? (u.unitPrice || 0) : 0;
+  } catch(e) { return 0; }
+}
+
 async function sendTelegram(message) {
   try {
     await auth.authStateReady();
@@ -113,13 +121,7 @@ const HA = {
 
   async addSlot(data) {
     // 접수 시점 단가 스냅샷: userId로 현재 단가 조회 후 슬롯에 저장
-    let unitPriceSnapshot = 0;
-    try {
-      const uSnap = await get(ref(db, PATHS.users));
-      const users = snapToArray(uSnap);
-      const u = users.find(u => u.username === (data.userId || ''));
-      unitPriceSnapshot = u ? (u.unitPrice || 0) : 0;
-    } catch(e) {}
+    const unitPriceSnapshot = await getUserUnitPrice(data.userId || '');
 
     const newSlot = {
       status:        'pending',
@@ -157,14 +159,7 @@ const HA = {
     const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
     // 슬롯 저장 단가 우선, 없으면 유저 DB 조회
     let unitPrice = (slot.unitPrice != null && slot.unitPrice > 0) ? slot.unitPrice : 0;
-    if (!unitPrice) {
-      try {
-        const uSnap = await get(ref(db, PATHS.users));
-        const users = snapToArray(uSnap);
-        const u = users.find(u => u.username === slot.userId);
-        unitPrice = u ? (u.unitPrice || 0) : 0;
-      } catch(e) {}
-    }
+    if (!unitPrice) unitPrice = await getUserUnitPrice(slot.userId);
     const totalTarget = (slot.dailyTarget || 0) * (slot.days || 0);
     const amount      = totalTarget * unitPrice;
     const amountVat   = Math.round(amount * 1.1);

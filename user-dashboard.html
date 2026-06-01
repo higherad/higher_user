@@ -552,7 +552,7 @@
     // 공지 4개
     const notices = allNotices.slice(0,4);
     document.getElementById('home-notices').innerHTML = notices.map(n => `
-      <div class="notice-item" onclick="openNotice(${n.id})">
+      <div class="notice-item" onclick="openNotice('${n._key}')">
         ${n.pinned ? '<div class="pin-dot"></div>' : '<div class="normal-dot"></div>'}
         <span class="notice-title">${n.title}</span>
         <span class="notice-meta">${n.date.slice(0,10)}</span>
@@ -566,8 +566,7 @@
   const SLOTS_PER_PAGE = 20;
 
   window.renderMySlots = async function(page) {
-    if (page === undefined) { slotsPage = 1; } // 필터 변경 시 1페이지로 리셋
-    else { slotsPage = page; }
+    slotsPage = page ?? 1;
 
     const status = document.getElementById('f-status').value;
     const range  = document.getElementById('f-range').value;
@@ -614,9 +613,9 @@
     const t14 = activeSlots.filter(s => { const d=getDday(s.endDate); return d>=8 && d<=14; }).length;
     const sumEl = document.getElementById('my-slots-summary');
     let summaryItems = `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;min-width:60px">진행중<br><span style="font-size:18px;font-weight:800;color:var(--accent)">${activeSlots.length}<small style="font-size:11px;color:var(--muted);font-weight:400"> 개</small></span></div>`;
-    if(range==='3'||range==='7'||range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">3일 이내<br><span style="font-size:18px;font-weight:800;color:var(--danger)">${t3}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
-    if(range==='7'||range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">7일 이내<br><span style="font-size:18px;font-weight:800;color:var(--warn)">${t7}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
-    if(range==='14'||range==='all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">14일 이내<br><span style="font-size:18px;font-weight:800;color:var(--info)">${t14}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
+    summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">3일 이내<br><span style="font-size:18px;font-weight:800;color:var(--danger)">${t3}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
+    if (range !== '3') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">7일 이내<br><span style="font-size:18px;font-weight:800;color:var(--warn)">${t7}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
+    if (range === '14' || range === 'all') summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">14일 이내<br><span style="font-size:18px;font-weight:800;color:var(--info)">${t14}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
     sumEl.innerHTML = summaryItems;
 
     const tbl = document.getElementById('slots-table');
@@ -682,17 +681,18 @@
   async function renderAllNotices() {
     const notices = await HA.getNotices();
     document.getElementById('all-notices').innerHTML = notices.map(n => `
-      <div class="notice-item" onclick="openNotice(${n.id})">
+      <div class="notice-item" onclick="openNotice('${n._key}')">
         ${n.pinned ? '<div class="pin-dot"></div>' : '<div class="normal-dot"></div>'}
         <span class="notice-title">${n.title}</span>
         <span class="notice-meta">${n.date.slice(0,10)} · 조회 ${n.views}</span>
       </div>`).join('');
   }
 
-  function openNotice(id) {
-    const n = HA.getNotices().find(x=>x.id===id);
+  window.openNotice = async function(id) {
+    const notices = await HA.getNotices();
+    const n = notices.find(x=>x._key===id);
     if (!n) return;
-    HA.updateNotice(id, { views: n.views+1 });
+    HA.updateNotice(n._key, { views: (n.views||0)+1 });
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
