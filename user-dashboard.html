@@ -887,9 +887,6 @@
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
-    const totalRefund = Object.entries(refundMap || {}).reduce((a, [k, v]) => {
-      return k.includes(`__${safe(user.username)}`) ? a + (v || 0) : a;
-    }, 0);
     const unpaidAmount = mySlots.filter(s => !paidSet.has(s._key)).reduce((a,s) => a + getSlotAmount(s), 0);
     const unpaidCount  = mySlots.filter(s => !paidSet.has(s._key)).length;
 
