@@ -113,6 +113,11 @@
     .excel-zone .upload-desc  { font-size:13px; color:var(--text2); }
     .excel-zone input[type=file] { display:none; }
 
+    /* 숫자 입력 화살표(스피너) 제거 */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    input[type=number] { -moz-appearance:textfield; appearance:textfield; }
+
     /* 엑셀 미리보기 테이블 */
     .preview-wrap { background:#fff; border:1px solid var(--border); border-radius:12px; overflow:auto; margin-bottom:20px; max-height:320px; }
     .preview-table { width:100%; border-collapse:collapse; font-size:12px; min-width:800px; }
