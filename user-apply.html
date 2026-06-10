@@ -812,7 +812,7 @@
   window.goConfirm = () => {
     if (!validate()) return;
     const daysVal = Number(document.getElementById('f-days').value);
-    if (daysVal > 50) {
+    if (daysVal >= 50) {
       if (!confirm(`일 수가 ${daysVal}일로 입력되었습니다. 맞는지 확인해주세요.\n계속 진행하시겠습니까?`)) return;
     }
     const rows = [
@@ -956,7 +956,7 @@
           else if (!urlMid)                                errors.push('유효하지 않은 플레이스 주소');
           if (!rankKeyword)                                errors.push('순위키워드 누락');
           if (days === null || isNaN(days) || days <= 0)   errors.push('일 수 누락');
-          else if (days > 50)                              errors.push('일 수 50 초과');
+          else if (days >= 50)                             errors.push('일 수 50 이상');
           if (!startDate)                                  errors.push('시작일 형식 오류');
           else if (startDate < uploadTodayStr)               errors.push('오늘 이전 시작일');
           if (!mid)                                        errors.push('MID 누락');
