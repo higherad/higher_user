@@ -215,16 +215,6 @@
     btn.innerHTML = '<span class="spinner"></span>처리 중...';
 
     try {
-      const users  = await HA.getUsers();
-      const exists = users.find(u => u.username === username);
-      if (exists) {
-        errEl.textContent = '이미 사용 중인 아이디입니다.';
-        errEl.classList.add('show');
-        btn.disabled = false;
-        btn.textContent = '회원가입';
-        return;
-      }
-
       await HA.addUser({ username, password, agency, agencyId: agency, unitPrice: 0 });
 
       sucEl.textContent = '회원가입이 완료되었습니다! 관리자 승인 후 로그인 가능합니다.';
@@ -242,7 +232,7 @@
       }, 2500);
 
     } catch (err) {
-      errEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+      errEl.textContent = err.message || '오류가 발생했습니다. 다시 시도해주세요.';
       errEl.classList.add('show');
       btn.disabled = false;
       btn.textContent = '회원가입';

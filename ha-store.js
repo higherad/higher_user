@@ -3,7 +3,8 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getDatabase, ref, set, get, push, update, remove }
+import { getDatabase, ref,
+  set as _set, get as _get, push as _push, update as _update, remove as _remove }
   from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword }
   from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
@@ -23,6 +24,17 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const db   = getDatabase(app);
 const auth = getAuth(app);
+
+// ── 인증 상태 복원 대기 래퍼 ─────────────────────────────────
+// RTDB 규칙(auth != null)으로 인해 새로고침 직후 세션 복원 전에
+// get이 먼저 실행되면 permission denied가 발생할 수 있음.
+const authReady = auth.authStateReady();
+
+async function get(r)        { await authReady; return _get(r); }
+async function set(r, v)     { await authReady; return _set(r, v); }
+async function push(r, v)    { await authReady; return _push(r, v); }
+async function update(r, v)  { await authReady; return _update(r, v); }
+async function remove(r)     { await authReady; return _remove(r); }
 
 // ── Cloud Run 엔드포인트 ─────────────────────────────────────
 const CLOUD_RUN = 'https://higherad-auto-938928195180.asia-northeast3.run.app';
@@ -225,7 +237,6 @@ const HA = {
     const email = `${username}@higherad.app`;
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      await signOut(auth); // 가입 후 자동 로그인 방지 (관리자 승인 대기)
     } catch (e) {
       if (e.code === 'auth/email-already-in-use') {
         throw new Error('이미 사용 중인 아이디입니다.');
@@ -245,6 +256,7 @@ const HA = {
       approved:  data.approved !== undefined ? data.approved : false,
     };
     const newRef = await push(ref(db, PATHS.users), newUser);
+    await signOut(auth); // 가입 후 자동 로그인 방지 (관리자 승인 대기)
     dispatch('ha:users:updated');
     return { ...newUser, _key: newRef.key };
   },
