@@ -140,7 +140,6 @@ const HA = {
       createdAt:     new Date().toISOString(),
       agencyId:      data.agencyId      || '',
       userId:        data.userId        || '',
-      slotType:      data.slotType      || '',
       startDate:     data.startDate     || '',
       endDate:       data.endDate       || '',
       storeName:     data.storeName     || '',
@@ -151,8 +150,6 @@ const HA = {
       days:          Number(data.days)        || 0,
       dailyTarget:   Number(data.dailyTarget) || 0,
       unitPrice:     unitPriceSnapshot,
-      rank:          null,
-      inflow:        0,
     };
     const newRef = await push(ref(db, PATHS.slots), newSlot);
     const result = { ...newSlot, _key: newRef.key };

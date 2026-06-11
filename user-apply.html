@@ -858,7 +858,6 @@
       const result = await HA.addSlot({
         agencyId:      targetAgencyId,
         userId:        targetUserId,
-        slotType:      '리워드',
         storeName:     document.getElementById('f-storeName').value,
         rankKeyword:   document.getElementById('f-rankKeyword').value.replace(/\s+/g, ''),
         url:           normalizedUrl,
@@ -1043,7 +1042,6 @@
         const result = await HA.addSlot({
           agencyId:    excelAgencyId,
           userId:      excelUserId,
-          slotType:    '리워드',
           storeName:   row.storeName,
           rankKeyword: row.rankKeyword,
           url:         row.url,
