@@ -284,20 +284,16 @@
             <div class="field-error" id="err-rankKeyword">순위 키워드를 입력해주세요.</div>
           </div>
         </div>
-        <div class="form-field">
-          <label><span class="required-dot"></span> URL <small style="color:var(--muted);font-weight:400">(예: https://m.place.naver.com/...)</small></label>
-          <input id="f-url" type="url" placeholder="https://m.place.naver.com/..." oninput="onUrlInput()">
-          <div class="field-error" id="err-url">URL을 입력해주세요.</div>
-        </div>
         <div class="form-row">
+          <div class="form-field">
+            <label><span class="required-dot"></span> URL <small style="color:var(--muted);font-weight:400">(예: https://m.place.naver.com/...)</small></label>
+            <input id="f-url" type="url" placeholder="https://m.place.naver.com/..." oninput="onUrlInput()">
+            <div class="field-error" id="err-url">URL을 입력해주세요.</div>
+          </div>
           <div class="form-field">
             <label>MID <small style="color:var(--muted);font-weight:400">(URL에서 자동 추출)</small></label>
             <input id="f-mid" type="text" readonly style="background:#f8fafc;color:var(--text2);cursor:default;" placeholder="URL 입력 시 자동 입력됩니다">
             <div class="field-error" id="err-mid"></div>
-          </div>
-          <div class="form-field">
-            <label>작업 키워드</label>
-            <input id="f-workKeyword" type="text" readonly style="background:#f8fafc;color:var(--text2);cursor:default;" placeholder="">
           </div>
         </div>
       </div>
@@ -826,7 +822,6 @@
       ['순위 키워드', document.getElementById('f-rankKeyword').value],
       ['URL',        document.getElementById('f-url').value],
       ['MID',        document.getElementById('f-mid').value],
-      ['작업 키워드', document.getElementById('f-workKeyword').value || '-'],
       ['일 수',      document.getElementById('f-days').value + '일'],
       ['일 목표',    Number(document.getElementById('f-dailyTarget').value).toLocaleString() + '개'],
       ['시작일',     document.getElementById('f-startDate').value],
@@ -868,7 +863,6 @@
         rankKeyword:   document.getElementById('f-rankKeyword').value.replace(/\s+/g, ''),
         url:           normalizedUrl,
         mid:           document.getElementById('f-mid').value,
-        workKeyword:   document.getElementById('f-workKeyword').value,
         startDate:     document.getElementById('f-startDate').value,
         endDate:       document.getElementById('f-endDate').value,
         days:          Number(document.getElementById('f-days').value) || 0,
@@ -897,7 +891,6 @@
     document.getElementById('f-rankKeyword').value = '';
     document.getElementById('f-url').value = '';
     document.getElementById('f-mid').value = '';
-    document.getElementById('f-workKeyword').value = '';
     document.getElementById('f-memo').value = '';
     setStepUI(1);
   };
@@ -1059,7 +1052,6 @@
           endDate:     row.endDate,
           days:        row.days,
           dailyTarget: row.dailyTarget,
-          workKeyword: '',
           memo:        '',
         });
         succeededSlots.push(result);
