@@ -859,7 +859,7 @@
     const unitPrice = myUser ? (myUser.unitPrice || 0) : 0;
 
     const mySlots = allSlots.filter(s =>
-      s.userId === user.username && (s.status === 'active' || s.status === 'accepted' || s.status === 'expired' || s.status === 'pending' || s.status === 'terminated' || s.status === 'rejected')
+      s.userId === user.username && (s.status === 'active' || s.status === 'accepted' || s.status === 'expired' || s.status === 'pending')
     );
 
     function safe(str) { return (str||'').replace(/[.#$[\]]/g, '_'); }
