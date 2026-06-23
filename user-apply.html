@@ -891,6 +891,10 @@
     document.getElementById('f-url').value = '';
     document.getElementById('f-mid').value = '';
     document.getElementById('f-memo').value = '';
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = false;
+    btn.innerHTML = '신청 완료 <i data-lucide="check-circle" size="16"></i>';
+    lucide.createIcons();
     setStepUI(1);
   };
 
