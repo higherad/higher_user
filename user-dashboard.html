@@ -496,7 +496,7 @@
       HA.getNotices(),
     ]);
 
-    const mySlots = allSlots.filter(s => s.userId === user.username);
+    const mySlots = allSlots.filter(s => s.userId === user.username && s.status !== 'deleted');
     const active  = mySlots.filter(s => s.status === 'active');
     const pending = mySlots.filter(s => s.status === 'pending');
     const today   = new Date(); today.setHours(0,0,0,0);
@@ -575,7 +575,7 @@
     const todayDt = new Date(); todayDt.setHours(0,0,0,0);
 
     const allSlots = await HA.getSlots();
-    let mySlots = allSlots.filter(s => s.userId === user.username);
+    let mySlots = allSlots.filter(s => s.userId === user.username && s.status !== 'deleted');
 
     // 일자 필터 (active 캠페인에만 적용)
     let slots = mySlots.filter(s => {
