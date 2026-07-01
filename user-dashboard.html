@@ -472,6 +472,15 @@
     const end   = new Date(endDate); end.setHours(0,0,0,0);
     return Math.ceil((end - today) / 86400000);
   }
+  // DB status가 active여도 종료일이 지났으면 expired로 처리
+  function effectiveStatus(s) {
+    if (s.status === 'active') {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const end   = new Date(s.endDate); end.setHours(0,0,0,0);
+      if (end < today) return 'expired';
+    }
+    return s.status;
+  }
   function ddayBadge(d) {
     if (d <= 3)  return `<span class="dday-badge dday-urgent">D-${d}</span>`;
     if (d <= 7)  return `<span class="dday-badge dday-soon">D-${d}</span>`;
@@ -497,7 +506,7 @@
     ]);
 
     const mySlots = allSlots.filter(s => s.userId === user.username && s.status !== 'deleted');
-    const active  = mySlots.filter(s => s.status === 'active');
+    const active  = mySlots.filter(s => effectiveStatus(s) === 'active');
     const pending = mySlots.filter(s => s.status === 'pending');
     const today   = new Date(); today.setHours(0,0,0,0);
     const in3     = new Date(today); in3.setDate(today.getDate()+3);
@@ -544,8 +553,8 @@
           <td style="color:var(--text2)">${s.rankKeyword||'-'}</td>
           <td style="color:var(--text2);font-size:12px">${s.startDate} ~ ${s.endDate}</td>
           <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
-          <td>${s.status==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
-          <td>${statusBadge[s.status]||s.status}</td>
+          <td>${effectiveStatus(s)==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
+          <td>${statusBadge[effectiveStatus(s)]||s.status}</td>
         </tr>`).join('')}</tbody>
       </table>`;
     }
@@ -579,11 +588,11 @@
 
     // 일자 필터 (active 캠페인에만 적용)
     let slots = mySlots.filter(s => {
-      if (status && s.status !== status) return false;
+      if (status && effectiveStatus(s) !== status) return false;
       if (kw && ![(s.storeName||''),(s.rankKeyword||''),(s.mid||'')].some(v=>v.toLowerCase().includes(kw))) return false;
       // 일자 필터: active 캠페인 + 오늘 이후 종료일만
       if (range !== 'all') {
-        if (s.status !== 'active') return false;
+        if (effectiveStatus(s) !== 'active') return false;
         const d = new Date(s.endDate); d.setHours(0,0,0,0);
         if (d < todayDt) return false;
         const limit = new Date(todayDt);
@@ -596,8 +605,8 @@
 
     // D-Day 순 정렬: active → endDate 오름차순, 나머지(만료/반려 등)는 뒤로
     slots.sort((a, b) => {
-      const aActive = a.status === 'active';
-      const bActive = b.status === 'active';
+      const aActive = effectiveStatus(a) === 'active';
+      const bActive = effectiveStatus(b) === 'active';
       if (aActive && !bActive) return -1;
       if (!aActive && bActive) return 1;
       if (aActive && bActive) return new Date(a.endDate) - new Date(b.endDate);
@@ -605,10 +614,7 @@
     });
 
     // 요약바 (내 캠페인 기준, active만)
-    const activeSlots = mySlots.filter(s => {
-      const d = new Date(s.endDate); d.setHours(0,0,0,0);
-      return s.status === 'active' && d >= todayDt;
-    });
+    const activeSlots = mySlots.filter(s => effectiveStatus(s) === 'active');
     const t3  = activeSlots.filter(s => { const d=getDday(s.endDate); return d<=3; }).length;
     const t7  = activeSlots.filter(s => { const d=getDday(s.endDate); return d>=4 && d<=7; }).length;
     const t14 = activeSlots.filter(s => { const d=getDday(s.endDate); return d>=8 && d<=14; }).length;
@@ -649,8 +655,8 @@
         <td style="color:var(--text2)">${s.startDate||'-'}</td>
         <td style="color:var(--text2)">${s.endDate||'-'}</td>
         <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
-        <td>${s.status==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
-        <td>${statusBadge[s.status]||s.status}
+        <td>${effectiveStatus(s)==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
+        <td>${statusBadge[effectiveStatus(s)]||s.status}
           ${s.status==='rejected' && s.rejectReason ? `<br><small style="color:var(--danger);font-size:10px">${s.rejectReason}</small>` : ''}
         </td>
         <td>${s.status==='pending' ? `<button class="btn-edit-slot" onclick="openSlotEditModal('${s._key}')">수정</button>` : ''}</td>
