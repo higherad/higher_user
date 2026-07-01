@@ -505,6 +505,19 @@
       HA.getNotices(),
     ]);
 
+    // ── 종료일 지난 active 슬롯 Firebase 즉시 업데이트 (세션당 1회) ──
+    if (!_expiredChecked) {
+      _expiredChecked = true;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const toExpire = allSlots.filter(s =>
+        s.userId === user.username && s.status === 'active' && s.endDate && s.endDate < todayStr
+      );
+      if (toExpire.length) {
+        await Promise.all(toExpire.map(s => HA.updateSlot(s._key, { status: 'expired' })));
+        toExpire.forEach(s => { s.status = 'expired'; });
+      }
+    }
+
     const mySlots = allSlots.filter(s => s.userId === user.username && s.status !== 'deleted');
     const active  = mySlots.filter(s => effectiveStatus(s) === 'active');
     const pending = mySlots.filter(s => s.status === 'pending');
@@ -574,6 +587,7 @@
   // ── 내 캠페인 전체 렌더 ───────────────────────────────────────
   let slotsPage = 1;
   const SLOTS_PER_PAGE = 20;
+  let _expiredChecked = false;
 
   window.renderMySlots = async function(page) {
     slotsPage = page ?? 1;
