@@ -481,6 +481,12 @@
     }
     return s.status;
   }
+  // 시작일이 아직 안 된 캠페인인지 확인 (오늘 포함 이전이면 시작한 것으로 간주)
+  function hasStarted(s) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const start = new Date(s.startDate); start.setHours(0,0,0,0);
+    return start <= today;
+  }
   function ddayBadge(d) {
     if (d <= 3)  return `<span class="dday-badge dday-urgent">D-${d}</span>`;
     if (d <= 7)  return `<span class="dday-badge dday-soon">D-${d}</span>`;
@@ -523,7 +529,11 @@
     const pending = mySlots.filter(s => s.status === 'pending');
     const today   = new Date(); today.setHours(0,0,0,0);
     const in3     = new Date(today); in3.setDate(today.getDate()+3);
-    const expiring= active.filter(s => { const d=new Date(s.endDate); return d<=in3 && d>=today; });
+    const expiring= active.filter(s => {
+      const start = new Date(s.startDate); start.setHours(0,0,0,0);
+      if (start > today) return false; // 아직 시작 안 한 캠페인은 종료예정에서 제외
+      const d = new Date(s.endDate); return d<=in3 && d>=today;
+    });
 
     document.getElementById('home-stats').innerHTML = `
       <div class="stat-card c-green">
@@ -566,7 +576,7 @@
           <td style="color:var(--text2)">${s.rankKeyword||'-'}</td>
           <td style="color:var(--text2);font-size:12px">${s.startDate} ~ ${s.endDate}</td>
           <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
-          <td>${effectiveStatus(s)==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
+          <td>${effectiveStatus(s)==='active' && hasStarted(s) ? ddayBadge(getDday(s.endDate)) : '-'}</td>
           <td>${statusBadge[effectiveStatus(s)]||s.status}</td>
         </tr>`).join('')}</tbody>
       </table>`;
@@ -604,9 +614,11 @@
     let slots = mySlots.filter(s => {
       if (status && effectiveStatus(s) !== status) return false;
       if (kw && ![(s.storeName||''),(s.rankKeyword||''),(s.mid||'')].some(v=>v.toLowerCase().includes(kw))) return false;
-      // 일자 필터: active 캠페인 + 오늘 이후 종료일만
+      // 일자 필터: active 캠페인 + 오늘 이후 종료일만 (아직 시작 안 한 캠페인은 제외)
       if (range !== 'all') {
         if (effectiveStatus(s) !== 'active') return false;
+        const start = new Date(s.startDate); start.setHours(0,0,0,0);
+        if (start > todayDt) return false;
         const d = new Date(s.endDate); d.setHours(0,0,0,0);
         if (d < todayDt) return false;
         const limit = new Date(todayDt);
@@ -629,9 +641,14 @@
 
     // 요약바 (내 캠페인 기준, active만)
     const activeSlots = mySlots.filter(s => effectiveStatus(s) === 'active');
-    const t3  = activeSlots.filter(s => { const d=getDday(s.endDate); return d<=3; }).length;
-    const t7  = activeSlots.filter(s => { const d=getDday(s.endDate); return d>=4 && d<=7; }).length;
-    const t14 = activeSlots.filter(s => { const d=getDday(s.endDate); return d>=8 && d<=14; }).length;
+    // 종료임박 집계는 이미 시작한 캠페인만 대상으로 함
+    const startedActiveSlots = activeSlots.filter(s => {
+      const start = new Date(s.startDate); start.setHours(0,0,0,0);
+      return start <= todayDt;
+    });
+    const t3  = startedActiveSlots.filter(s => { const d=getDday(s.endDate); return d<=3; }).length;
+    const t7  = startedActiveSlots.filter(s => { const d=getDday(s.endDate); return d>=4 && d<=7; }).length;
+    const t14 = startedActiveSlots.filter(s => { const d=getDday(s.endDate); return d>=8 && d<=14; }).length;
     const sumEl = document.getElementById('my-slots-summary');
     let summaryItems = `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;min-width:60px">진행중<br><span style="font-size:18px;font-weight:800;color:var(--accent)">${activeSlots.length}<small style="font-size:11px;color:var(--muted);font-weight:400"> 개</small></span></div>`;
     summaryItems += `<div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:600">3일 이내<br><span style="font-size:18px;font-weight:800;color:var(--danger)">${t3}<small style="font-size:11px;color:var(--muted);font-weight:400"> 건</small></span></div>`;
@@ -669,7 +686,7 @@
         <td style="color:var(--text2)">${s.startDate||'-'}</td>
         <td style="color:var(--text2)">${s.endDate||'-'}</td>
         <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
-        <td>${effectiveStatus(s)==='active' ? ddayBadge(getDday(s.endDate)) : '-'}</td>
+        <td>${effectiveStatus(s)==='active' && hasStarted(s) ? ddayBadge(getDday(s.endDate)) : '-'}</td>
         <td>${statusBadge[effectiveStatus(s)]||s.status}
           ${s.status==='rejected' && s.rejectReason ? `<br><small style="color:var(--danger);font-size:10px">${s.rejectReason}</small>` : ''}
         </td>
