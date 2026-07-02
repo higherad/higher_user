@@ -629,13 +629,19 @@
       return true;
     });
 
-    // D-Day 순 정렬: active → endDate 오름차순, 나머지(종료/반려 등)는 뒤로
+    // D-Day 순 정렬: active(시작한 것 먼저) → endDate 오름차순, 나머지(종료/반려 등)는 뒤로
     slots.sort((a, b) => {
       const aActive = effectiveStatus(a) === 'active';
       const bActive = effectiveStatus(b) === 'active';
       if (aActive && !bActive) return -1;
       if (!aActive && bActive) return 1;
-      if (aActive && bActive) return new Date(a.endDate) - new Date(b.endDate);
+      if (aActive && bActive) {
+        const aStarted = hasStarted(a);
+        const bStarted = hasStarted(b);
+        if (aStarted && !bStarted) return -1;
+        if (!aStarted && bStarted) return 1;
+        return new Date(a.endDate) - new Date(b.endDate);
+      }
       return new Date(b.createdAt||0) - new Date(a.createdAt||0);
     });
 
