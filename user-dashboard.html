@@ -404,7 +404,7 @@
         <option value="active">진행중</option>
         <option value="pending">승인대기</option>
         <option value="accepted">접수</option>
-        <option value="expired">만료</option>
+        <option value="expired">종료</option>
       </select>
       <select id="f-range" onchange="renderMySlots()">
         <option value="all" selected>전체 진행중</option>
@@ -493,7 +493,7 @@
     accepted:   '<span class="status-badge s-accepted">접수</span>',
     active:     '<span class="status-badge s-active">진행중</span>',
     rejected:   '<span class="status-badge s-rejected">반려</span>',
-    expired:    '<span class="status-badge s-expired">만료</span>',
+    expired:    '<span class="status-badge s-expired">종료</span>',
     terminated: '<span class="status-badge s-terminated">종료</span>',
   };
 
@@ -538,7 +538,7 @@
       </div>
       <div class="stat-card c-warn">
         <div class="stat-icon warn"><i data-lucide="timer" size="18"></i></div>
-        <div class="stat-label">만료 예정(3일)</div>
+        <div class="stat-label">종료 예정(3일)</div>
         <div class="stat-value">${expiring.length}<span class="stat-unit">건</span></div>
       </div>
       <div class="stat-card c-danger">
@@ -617,7 +617,7 @@
       return true;
     });
 
-    // D-Day 순 정렬: active → endDate 오름차순, 나머지(만료/반려 등)는 뒤로
+    // D-Day 순 정렬: active → endDate 오름차순, 나머지(종료/반려 등)는 뒤로
     slots.sort((a, b) => {
       const aActive = effectiveStatus(a) === 'active';
       const bActive = effectiveStatus(b) === 'active';
