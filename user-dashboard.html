@@ -169,6 +169,7 @@
     .s-rejected { background: rgba(239,68,68,.1);   color: #dc2626; }
     .s-expired  { background: #f1f5f9; color: var(--text2); }
     .s-terminated { background: rgba(100,116,139,.12); color: #334155; }
+    .s-reserved { background: rgba(245,158,11,.12); color: #d97706; }
 
     .rank-badge { color: var(--info); border: 1px solid var(--info); padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
     .dday-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
@@ -402,6 +403,7 @@
       <select id="f-status" onchange="renderMySlots()">
         <option value="">전체 상태</option>
         <option value="active">진행중</option>
+        <option value="reserved">예약중</option>
         <option value="pending">승인대기</option>
         <option value="accepted">접수</option>
         <option value="expired">종료</option>
@@ -472,12 +474,13 @@
     const end   = new Date(endDate); end.setHours(0,0,0,0);
     return Math.ceil((end - today) / 86400000);
   }
-  // DB status가 active여도 종료일이 지났으면 expired로 처리
+  // DB status가 active여도 종료일이 지났으면 expired, 시작일이 안 됐으면 reserved로 처리
   function effectiveStatus(s) {
     if (s.status === 'active') {
       const today = new Date(); today.setHours(0,0,0,0);
       const end   = new Date(s.endDate); end.setHours(0,0,0,0);
       if (end < today) return 'expired';
+      if (!hasStarted(s)) return 'reserved';
     }
     return s.status;
   }
@@ -498,6 +501,7 @@
     pending:    '<span class="status-badge s-pending">승인대기</span>',
     accepted:   '<span class="status-badge s-accepted">접수</span>',
     active:     '<span class="status-badge s-active">진행중</span>',
+    reserved:   '<span class="status-badge s-reserved">예약</span>',
     rejected:   '<span class="status-badge s-rejected">반려</span>',
     expired:    '<span class="status-badge s-expired">종료</span>',
     terminated: '<span class="status-badge s-terminated">종료</span>',
