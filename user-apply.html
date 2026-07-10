@@ -981,8 +981,16 @@
 
   function renderPreview() {
     const validCount = excelRows.filter(r => r.valid).length;
+    const errorCount = excelRows.length - validCount;
     document.getElementById('preview-info').innerHTML =
-      `총 <strong>${excelRows.length}건</strong> 중 <strong style="color:var(--accent)">${validCount}건</strong> 접수 가능 / <strong style="color:var(--danger)">${excelRows.length - validCount}건</strong> 오류`;
+      `총 <strong>${excelRows.length}건</strong> 중 <strong style="color:var(--accent)">${validCount}건</strong> 접수 가능 / <strong style="color:var(--danger)">${errorCount}건</strong> 오류`;
+
+    const submitBtn = document.getElementById('excel-submit-btn');
+    submitBtn.disabled = errorCount > 0;
+    submitBtn.title = errorCount > 0 ? '오류 행이 있어 접수할 수 없습니다. 오류를 수정한 후 다시 업로드해주세요.' : '';
+    submitBtn.innerHTML = errorCount > 0
+      ? `<i data-lucide="alert-triangle" size="16"></i> 오류를 수정해주세요 (${errorCount}건)`
+      : `<i data-lucide="upload" size="16"></i> 일괄 접수하기`;
 
     document.getElementById('preview-body').innerHTML = excelRows.map((r, i) => `
       <tr>
@@ -1001,6 +1009,7 @@
 
     document.getElementById('excel-zone').style.display = 'none';
     document.getElementById('excel-preview').style.display = 'block';
+    lucide.createIcons();
   }
 
   window.resetExcel = function() {
@@ -1027,6 +1036,7 @@
       alert('영업점을 먼저 선택해주세요.');
       return;
     }
+    if (excelRows.some(r => !r.valid)) return alert('오류가 있는 행이 있습니다. 오류를 수정한 후 다시 업로드해주세요.');
     const validRows = excelRows.filter(r => r.valid);
     if (!validRows.length) return alert('접수 가능한 데이터가 없습니다.');
 
