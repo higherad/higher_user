@@ -171,7 +171,6 @@
     .s-terminated { background: rgba(100,116,139,.12); color: #334155; }
     .s-reserved { background: rgba(245,158,11,.12); color: #d97706; }
 
-    .rank-badge { color: var(--info); border: 1px solid var(--info); padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
     .dday-badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
     .dday-urgent{ background: #fef2f2; color: var(--danger); }
     .dday-soon  { background: #fefce8; color: #a16207; }
@@ -246,22 +245,6 @@
     .paid-badge   { background:rgba(16,185,129,.1); color:#059669; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
     .unpaid-badge { background:rgba(239,68,68,.1); color:var(--danger); padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
 
-    /* ── 정산 접수 시간 그룹 ── */
-    .settle-time-group { margin-bottom:20px; }
-    .settle-time-header {
-      display:flex; align-items:center; gap:10px;
-      background:var(--navy); color:#fff;
-      padding:10px 16px; border-radius:10px 10px 0 0;
-      font-size:13px; font-weight:700;
-    }
-    .settle-time-badge {
-      background:var(--accent); color:#fff;
-      padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600;
-    }
-    .settle-time-amount {
-      margin-left:auto; font-size:13px; font-weight:700; color:var(--accent);
-    }
-
     /* ── 반응형 ── */
     @media (max-width:768px) {
       /* 헤더 */
@@ -333,7 +316,6 @@
     .pg-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
     .pg-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
     .pg-btn:disabled { opacity: .35; cursor: not-allowed; }
-    .pg-info { font-size: 12px; color: var(--text2); padding: 0 8px; }
   </style>
 </head>
 <body>

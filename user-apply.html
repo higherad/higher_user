@@ -51,12 +51,6 @@
     .card-title { font-size:20px; font-weight:800; margin-bottom:6px; }
     .card-desc  { font-size:13px; color:var(--text2); margin-bottom:28px; line-height:1.6; }
 
-    /* 캠페인타입 선택 */
-    .type-select-row { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
-    .type-select-row label { font-size:12px; font-weight:700; color:var(--text2); white-space:nowrap; }
-    .type-select-row select { flex:1; padding:11px 14px; border:1.5px solid var(--border); border-radius:9px; font-size:13px; font-family:inherit; color:var(--text); background:#fff; outline:none; transition:.2s; }
-    .type-select-row select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(16,185,129,.1); }
-
     /* 폼 */
     .form-section { margin-bottom:24px; }
     .form-section-title { font-size:12px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
@@ -70,8 +64,6 @@
     .form-field input.error { border-color:var(--danger); }
     .field-hint  { font-size:11px; color:var(--muted); margin-top:4px; }
     .field-error { font-size:11px; color:var(--danger); margin-top:4px; display:none; }
-    .conditional-field { display:none; }
-    .conditional-field.show { display:block; }
 
     /* 확인 */
     .confirm-section { margin-bottom:20px; }
@@ -97,11 +89,6 @@
     .btn-next:hover { background:var(--accent2); transform:translateY(-1px); }
     .btn-next:disabled { background:var(--muted); box-shadow:none; cursor:not-allowed; transform:none; }
     .btn-ghost { padding:12px 24px; border:1.5px solid var(--border); border-radius:10px; background:#fff; color:var(--text2); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
-
-    /* 빠른 기간 버튼 */
-    .duration-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-    .duration-btn { padding:6px 14px; border:1.5px solid var(--border); border-radius:8px; background:#fff; color:var(--text2); font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; transition:.2s; }
-    .duration-btn:hover { border-color:var(--accent); color:var(--accent); }
 
     /* 엑셀 업로드 영역 */
     .excel-zone {
