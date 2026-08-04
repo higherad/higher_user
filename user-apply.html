@@ -450,6 +450,9 @@
   // URL에서 파일명 숨기기 — 항상 / 로만 표시
   history.replaceState(null, '', '/');
 
+  // innerHTML 템플릿에 사용자 입력(업체명/키워드 등)을 넣을 때 반드시 통과시켜야 하는 HTML 이스케이프
+  const escProd = v => String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
   function normalizeUrlForAdmin(url) {
     const clean = String(url || '').split('?')[0].trim();
     const match = clean.match(/(https?:\/\/(?:m\.)?place\.naver\.com\/(?:restaurant|hospital|place|hairshop|nailshop|accommodation)\/\d+)/);
@@ -821,7 +824,7 @@
         ${rows.map(([k,v]) => `
           <div class="confirm-row">
             <span class="confirm-key">${k}</span>
-            <span class="confirm-value">${v}</span>
+            <span class="confirm-value">${escProd(v)}</span>
           </div>`).join('')}
       </div>`;
     setStepUI(2);
@@ -982,10 +985,10 @@
     document.getElementById('preview-body').innerHTML = excelRows.map((r, i) => `
       <tr>
         <td style="color:var(--muted)">${i+1}</td>
-        <td style="font-weight:500">${r.storeName || '-'}</td>
-        <td style="color:var(--text2);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.url || '-'}</td>
-        <td style="color:var(--text2)">${r.mid || '-'}</td>
-        <td>${r.rankKeyword || '-'}</td>
+        <td style="font-weight:500">${escProd(r.storeName || '-')}</td>
+        <td style="color:var(--text2);font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escProd(r.url || '-')}</td>
+        <td style="color:var(--text2)">${escProd(r.mid || '-')}</td>
+        <td>${escProd(r.rankKeyword || '-')}</td>
         <td style="color:var(--text2)">${r.days !== null ? r.days + '일' : '-'}</td>
         <td style="color:var(--text2)">${r.startDate || '-'}</td>
         <td style="color:var(--text2)">${r.dailyTarget !== null && r.dailyTarget !== undefined ? r.dailyTarget.toLocaleString() : '-'}</td>

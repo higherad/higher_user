@@ -431,6 +431,10 @@
   const user = HA.getCurrentUser();
   if (!user || user.role === 'admin') location.href = 'index.html';
 
+  // innerHTML 템플릿에 사용자 입력(업체명/키워드/메모 등)을 넣을 때 반드시 통과시켜야 하는
+  // HTML 이스케이프 — 없으면 캠페인 정보에 스크립트를 심어 저장형 XSS가 가능함
+  const escProd = v => String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
   // ── 유저 정보 세팅 ───────────────────────────────────────────
   const displayName = user.agency || user.agencyId || user.username;
   document.getElementById('user-name').textContent = displayName;
@@ -558,9 +562,9 @@
           <th>기간</th><th>일 목표</th><th>D-Day</th><th>상태</th>
         </tr></thead>
         <tbody>${recent.map(s => `<tr>
-          <td style="font-weight:500">${s.storeName||'-'}</td>
-          <td style="color:var(--text2)">${s.rankKeyword||'-'}</td>
-          <td style="color:var(--text2);font-size:12px">${s.startDate} ~ ${s.endDate}</td>
+          <td style="font-weight:500">${escProd(s.storeName||'-')}</td>
+          <td style="color:var(--text2)">${escProd(s.rankKeyword||'-')}</td>
+          <td style="color:var(--text2);font-size:12px">${escProd(s.startDate)} ~ ${escProd(s.endDate)}</td>
           <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
           <td>${effectiveStatus(s)==='active' && hasStarted(s) ? ddayBadge(getDday(s.endDate)) : '-'}</td>
           <td>${statusBadge[effectiveStatus(s)]||s.status}</td>
@@ -671,12 +675,12 @@
         <th>일 수</th><th>시작일</th><th>종료일</th><th>일 목표</th><th>D-Day</th><th>상태</th><th></th>
       </tr></thead>
       <tbody>${pageSlots.map(s => `<tr>
-        <td style="font-weight:500">${s.url ? `<a href="${s.url}" target="_blank" style="color:var(--text);text-decoration:none;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${s.storeName||'-'}</a>` : (s.storeName||'-')}</td>
-        <td style="color:var(--text2);font-size:11px">${s.mid||'-'}</td>
-        <td style="color:var(--text2)">${s.rankKeyword||'-'}</td>
+        <td style="font-weight:500">${s.url ? `<a href="${escProd(s.url)}" target="_blank" style="color:var(--text);text-decoration:none;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${escProd(s.storeName||'-')}</a>` : escProd(s.storeName||'-')}</td>
+        <td style="color:var(--text2);font-size:11px">${escProd(s.mid||'-')}</td>
+        <td style="color:var(--text2)">${escProd(s.rankKeyword||'-')}</td>
         <td style="color:var(--text2)">${s.days||'-'}</td>
-        <td style="color:var(--text2)">${s.startDate||'-'}</td>
-        <td style="color:var(--text2)">${s.endDate||'-'}</td>
+        <td style="color:var(--text2)">${escProd(s.startDate||'-')}</td>
+        <td style="color:var(--text2)">${escProd(s.endDate||'-')}</td>
         <td><strong>${(s.dailyTarget||0).toLocaleString()}</strong></td>
         <td>${effectiveStatus(s)==='active' && hasStarted(s) ? ddayBadge(getDday(s.endDate)) : '-'}</td>
         <td>${statusBadge[effectiveStatus(s)]||s.status}
@@ -1004,7 +1008,7 @@
         </div>
         <div class="profile-field">
           <label>업체명 (대행사)</label>
-          <input id="pm-agency" value="${user.agency || user.agencyId || ''}" placeholder="업체명을 입력하세요">
+          <input id="pm-agency" value="${escProd(user.agency || user.agencyId || '')}" placeholder="업체명을 입력하세요">
         </div>
         <div class="profile-field">
           <label>새 비밀번호</label>
@@ -1101,20 +1105,20 @@
         <div class="edit-2col">
           <div class="profile-field">
             <label>플레이스명</label>
-            <input readonly style="background:#f8fafc;color:var(--text2);cursor:default;" value="${(s.storeName||'').replace(/"/g,'&quot;')}">
+            <input readonly style="background:#f8fafc;color:var(--text2);cursor:default;" value="${escProd(s.storeName||'')}">
           </div>
           <div class="profile-field">
             <label>MID</label>
-            <input readonly style="background:#f8fafc;color:var(--text2);cursor:default;" value="${(s.mid||'').replace(/"/g,'&quot;')}">
+            <input readonly style="background:#f8fafc;color:var(--text2);cursor:default;" value="${escProd(s.mid||'')}">
           </div>
         </div>
         <div class="profile-field">
           <label>URL</label>
-          <input readonly style="background:#f8fafc;color:var(--text2);cursor:default;" value="${(s.url||'').replace(/"/g,'&quot;')}">
+          <input readonly style="background:#f8fafc;color:var(--text2);cursor:default;" value="${escProd(s.url||'')}">
         </div>
         <div class="profile-field">
           <label>순위키워드</label>
-          <input readonly style="background:#f8fafc;color:var(--text2);cursor:default;" value="${(s.rankKeyword||'').replace(/"/g,'&quot;')}">
+          <input readonly style="background:#f8fafc;color:var(--text2);cursor:default;" value="${escProd(s.rankKeyword||'')}">
         </div>
         <div class="edit-2col">
           <div class="profile-field">
@@ -1138,7 +1142,7 @@
         </div>
         <div class="profile-field">
           <label>메모</label>
-          <input id="se-memo" value="${(s.memo||'').replace(/"/g,'&quot;')}">
+          <input id="se-memo" value="${escProd(s.memo||'')}">
         </div>
         <div id="se-msg" class="profile-msg"></div>
         <div class="profile-footer">
