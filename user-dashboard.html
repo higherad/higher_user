@@ -1058,9 +1058,8 @@
 
       await HA.updateUser(user._key, patch);
 
-      // 세션 갱신
+      // 세션 갱신 (변경한 비밀번호는 세션에 남기지 않음 — 로그인 상태 유지엔 불필요)
       const updated = { ...user, agency, agencyId: agency };
-      if (pw) updated.password = pw;
       sessionStorage.setItem('ha_current_user', JSON.stringify(updated));
 
       // 헤더 즉시 반영

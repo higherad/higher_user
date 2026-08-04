@@ -104,7 +104,9 @@ const HA = {
       const found    = users.find(u => u.username === username);
       if (found) {
         if (found.approved === false) return { ok: false, reason: 'pending' };
-        const user = { ...found, id: uid };
+        // ha/users의 password(레거시 평문 필드)를 세션에 그대로 남기지 않음 — 로그인엔 필요 없음
+        const { password: _pw, ...profile } = found;
+        const user = { ...profile, id: uid };
         sessionStorage.setItem('ha_current_user', JSON.stringify(user));
         return { ok: true, user };
       }
