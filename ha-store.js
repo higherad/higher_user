@@ -139,6 +139,11 @@ const HA = {
     return getUserUnitPrice(userId);
   },
 
+  // TODO(보안, 미해결 — 2026-08-04): data.userId/agencyId를 검증 없이 그대로 신뢰함.
+  // 로그인한 계정이면 임의 userId로 호출해 다른 대행사 명의로 접수 가능(그 대행사가 청구를 받음).
+  // super 롤(현재 'higherad')은 selectedBranch로 실제 다른 계정 명의 접수가 의도된 기능이라
+  // "무조건 자기 자신"으로 단순 고정은 안 됨 — RTDB 규칙에 UID↔username 검증을 추가하거나
+  // 서버(Cloud Run) 프록시 경유로 바꿔야 함. 메모리 project_higher_user_auth_gap.md 참조.
   async addSlot(data) {
     // 접수 시점 단가 스냅샷: 호출부가 미리 조회해 넘겼으면 재사용, 아니면 직접 조회
     const unitPriceSnapshot = (data.unitPrice != null) ? data.unitPrice : await getUserUnitPrice(data.userId || '');
@@ -227,6 +232,9 @@ const HA = {
   // 회원 CRUD
   // ════════════════════════════════════════════════════════
 
+  // TODO(보안, 미해결 — 2026-08-04): ha/users 전체 노드를 필터 없이 반환. 화면에선 자기 것만
+  // 걸러 보여주지만 로그인한 아무 계정이나 devtools로 이 응답을 그대로 받아 전 대행사의 단가·
+  // 연락처·(레거시 계정은) 평문 비밀번호까지 열람 가능. 메모리 project_higher_user_auth_gap.md 참조.
   async getUsers() {
     const snapshot = await get(ref(db, PATHS.users));
     return snapToArray(snapshot);
