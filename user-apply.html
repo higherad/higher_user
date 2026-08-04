@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HIGHER AD | 캠페인 신청</title>
   <link rel="icon" href="/favicon.png">
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.427.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"/>
   <style>
@@ -1038,6 +1038,9 @@
     let fail = 0;
     const succeededSlots = [];
 
+    // 이 배치의 모든 행이 같은 userId를 쓰므로 단가를 1회만 조회해 재사용 (addSlot마다 재조회 방지)
+    const excelUnitPrice = await HA.getUserUnitPrice(excelUserId);
+
     for (const row of validRows) {
       try {
         const result = await HA.addSlot({
@@ -1052,6 +1055,7 @@
           days:        row.days,
           dailyTarget: row.dailyTarget,
           memo:        '',
+          unitPrice:   excelUnitPrice,
         });
         succeededSlots.push(result);
         success++;

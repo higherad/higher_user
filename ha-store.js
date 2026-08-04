@@ -131,9 +131,15 @@ const HA = {
     );
   },
 
+  // 엑셀 일괄접수처럼 같은 userId로 addSlot을 여러 번 호출할 때, 매번 users 전체를
+  // 재조회하지 않도록 호출부에서 1회 조회해 각 addSlot({unitPrice: ...})에 넘기는 용도.
+  async getUserUnitPrice(userId) {
+    return getUserUnitPrice(userId);
+  },
+
   async addSlot(data) {
-    // 접수 시점 단가 스냅샷: userId로 현재 단가 조회 후 슬롯에 저장
-    const unitPriceSnapshot = await getUserUnitPrice(data.userId || '');
+    // 접수 시점 단가 스냅샷: 호출부가 미리 조회해 넘겼으면 재사용, 아니면 직접 조회
+    const unitPriceSnapshot = (data.unitPrice != null) ? data.unitPrice : await getUserUnitPrice(data.userId || '');
 
     const newSlot = {
       status:        'pending',
