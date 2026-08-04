@@ -49,11 +49,6 @@
       font-size: 13px; color: var(--muted);
     }
     .header-user strong { color: #fff; }
-    .header-avatar {
-      width: 30px; height: 30px; border-radius: 50%;
-      background: var(--accent); display: flex; align-items: center;
-      justify-content: center; font-size: 12px; font-weight: 700; color: #fff;
-    }
     .header-nav { display: flex; gap: 4px; }
     .nav-tab {
       padding: 7px 16px; border-radius: 7px; cursor: pointer;
@@ -333,7 +328,6 @@
       style="cursor:pointer;padding:5px 8px;border-radius:8px;transition:.2s;"
       onmouseover="this.style.background='rgba(255,255,255,.08)'"
       onmouseout="this.style.background='transparent'">
-      <div class="header-avatar" id="user-avatar">?</div>
       <span><strong id="user-name">-</strong> 님</span>
       <i data-lucide="chevron-down" size="12" style="color:var(--muted);margin-left:2px"></i>
     </div>
@@ -438,7 +432,6 @@
   // ── 유저 정보 세팅 ───────────────────────────────────────────
   const displayName = user.agency || user.agencyId || user.username;
   document.getElementById('user-name').textContent = displayName;
-  document.getElementById('user-avatar').textContent = displayName.charAt(0).toUpperCase();
   document.getElementById('welcome-msg').textContent = `안녕하세요, ${displayName} 님 👋`;
 
   // ── 탭 전환 ─────────────────────────────────────────────────
@@ -1065,7 +1058,6 @@
       // 헤더 즉시 반영
       const newDisplay = agency || user.username;
       document.getElementById('user-name').textContent = newDisplay;
-      document.getElementById('user-avatar').textContent = newDisplay.charAt(0).toUpperCase();
       document.getElementById('pm-display').textContent = newDisplay;
       document.getElementById('pm-avatar').textContent = newDisplay.charAt(0).toUpperCase();
 
