@@ -572,10 +572,10 @@
     inner.innerHTML = filtered.map(u => {
       const label = u.agency || u.username;
       const sub   = u.username;
-      const isSelected = selectedBranch && selectedBranch._key === u._key;
+      const isSelected = selectedBranch && selectedBranch.username === u.username;
       return `<div class="branch-option${isSelected ? ' selected' : ''}"
-                   data-key="${u._key}"
-                   onclick="selectBranch('${u._key}')"
+                   data-key="${u.username}"
+                   onclick="selectBranch('${u.username}')"
                    style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center;transition:.15s;${isSelected?'background:rgba(16,185,129,.08);color:var(--accent);font-weight:700;':''}">
                 <span>${label} <span style="color:var(--muted);font-weight:400;font-size:12px">(${sub})</span></span>
                 ${isSelected ? '<i data-lucide="check" size="13"></i>' : ''}
@@ -584,8 +584,8 @@
     lucide.createIcons();
   }
 
-  window.selectBranch = function(key) {
-    selectedBranch = branchMembers.find(u => u._key === key) || null;
+  window.selectBranch = function(username) {
+    selectedBranch = branchMembers.find(u => u.username === username) || null;
     closeBranchDropdown();
 
     const infoEl   = document.getElementById('branch-info');
@@ -654,11 +654,10 @@
     document.getElementById('single-done-dashboard-btn').style.display = 'none';
     document.getElementById('excel-done-dashboard-btn').style.display  = 'none';
 
-    // 회원 목록 로드
+    // 회원 목록 로드 (서버가 이미 회원만+비밀번호 등 제외하고 필터링해서 줌)
     try {
-      const users = await HA.getUsers();
-      branchMembers = users
-        .filter(u => u.role !== 'admin' && u.role !== 'staff' && u.role !== 'super' && u.approved !== false)
+      const branches = await HA.getBranchList();
+      branchMembers = branches
         .sort((a, b) => (a.agency || a.username).localeCompare(b.agency || b.username, 'ko'));
     } catch(e) {
       console.warn('영업점 목록 로드 실패', e);
@@ -1041,9 +1040,6 @@
     let fail = 0;
     const succeededSlots = [];
 
-    // 이 배치의 모든 행이 같은 userId를 쓰므로 단가를 1회만 조회해 재사용 (addSlot마다 재조회 방지)
-    const excelUnitPrice = await HA.getUserUnitPrice(excelUserId);
-
     for (const row of validRows) {
       try {
         const result = await HA.addSlot({
@@ -1058,7 +1054,6 @@
           days:        row.days,
           dailyTarget: row.dailyTarget,
           memo:        '',
-          unitPrice:   excelUnitPrice,
         });
         succeededSlots.push(result);
         success++;

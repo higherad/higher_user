@@ -874,15 +874,14 @@
     const curYear  = now.getFullYear();
     const monthLabel = `${curMonth}월`;
 
-    const [allSlots, allUsers, paidSet, refundMap] = await Promise.all([
+    const [allSlots, myProfile, paidSet, refundMap] = await Promise.all([
       HA.getSlots(),
-      HA.getUsers(),
+      HA.getMyProfile(),
       HA.getPaidSet(),
       HA.getRefunds().catch(() => ({})),
     ]);
 
-    const myUser    = allUsers.find(u => u.username === user.username);
-    const unitPrice = myUser ? (myUser.unitPrice || 0) : 0;
+    const unitPrice = myProfile ? (myProfile.unitPrice || 0) : 0;
 
     const mySlots = allSlots.filter(s =>
       s.userId === user.username && (s.status === 'active' || s.status === 'accepted' || s.status === 'expired' || s.status === 'pending')

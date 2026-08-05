@@ -49,25 +49,28 @@ const PATHS = {
   settleSnapshots: 'ha/settle_snapshots',
 };
 
-async function getUserUnitPrice(userId) {
-  try {
-    const uSnap = await get(ref(db, PATHS.users));
-    const u = snapToArray(uSnap).find(u => u.username === (userId || ''));
-    return u ? (u.unitPrice || 0) : 0;
-  } catch(e) { return 0; }
+// higher_user 포털 전용 Cloud Run 프록시 호출 — userId/agencyId/unitPrice 등 신원 관련 값은
+// 클라이언트가 보낸 값을 신뢰하지 않고 서버가 ID 토큰으로 검증해 직접 결정한다.
+// (과거 버전은 ha/slots·ha/users 전체 노드를 클라이언트에서 직접 읽어 userId 위조 및 전체
+//  고객 데이터(평문 비밀번호 포함) 노출이 가능했음 — project_higher_user_auth_gap.md 참조)
+async function callUserApi(path, body) {
+  await auth.authStateReady();
+  const user = auth.currentUser;
+  if (!user) throw new Error('로그인이 필요합니다.');
+  const idToken = await user.getIdToken();
+  const res = await fetch(`${CLOUD_RUN}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+    body: JSON.stringify(body || {}),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error || `${path} 요청 실패`);
+  return json;
 }
 
 async function sendTelegram(message) {
   try {
-    await auth.authStateReady();
-    const user = auth.currentUser;
-    if (!user) return;
-    const idToken = await user.getIdToken();
-    await fetch(`${CLOUD_RUN}/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-      body: JSON.stringify({ message }),
-    });
+    await callUserApi('/notify', { message });
   } catch (e) {
     console.warn('텔레그램 알림 실패:', e);
   }
@@ -98,21 +101,18 @@ const HA = {
     const email = `${username}@higherad.app`;
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      const uid  = cred.user.uid;
-      const snapshot = await get(ref(db, PATHS.users));
-      const users    = snapToArray(snapshot);
-      const found    = users.find(u => u.username === username);
-      if (found) {
-        if (found.approved === false) return { ok: false, reason: 'pending' };
-        // ha/users의 password(레거시 평문 필드)를 세션에 그대로 남기지 않음 — 로그인엔 필요 없음
-        const { password: _pw, ...profile } = found;
-        const user = { ...profile, id: uid };
-        sessionStorage.setItem('ha_current_user', JSON.stringify(user));
-        return { ok: true, user };
+      // 프로필은 서버(/user-profile)에서 본인 것만 받아옴 — ha/users 전체 노드를 클라이언트가
+      // 직접 읽지 않음(비밀번호 필드 포함 전체 고객 데이터 노출 방지)
+      const { user: profile } = await callUserApi('/user-profile');
+      if (profile.approved === false) {
+        await signOut(auth);
+        return { ok: false, reason: 'pending' };
       }
-      await signOut(auth);
-      return { ok: false };
+      const user = { ...profile, id: cred.user.uid };
+      sessionStorage.setItem('ha_current_user', JSON.stringify(user));
+      return { ok: true, user };
     } catch (e) {
+      await signOut(auth).catch(() => {});
       return { ok: false };
     }
   },
@@ -126,46 +126,27 @@ const HA = {
   // 캠페인 CRUD
   // ════════════════════════════════════════════════════════
 
+  // 본인(userId=로그인 username) 캠페인만 서버가 필터링해 반환 — 다른 대행사 데이터는 안 옴.
   async getSlots() {
-    const snapshot = await get(ref(db, PATHS.slots));
-    return snapToArray(snapshot).sort((a, b) =>
-      new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    const { slots } = await callUserApi('/user-slots');
+    return slots.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   },
 
-  // 엑셀 일괄접수처럼 같은 userId로 addSlot을 여러 번 호출할 때, 매번 users 전체를
-  // 재조회하지 않도록 호출부에서 1회 조회해 각 addSlot({unitPrice: ...})에 넘기는 용도.
-  async getUserUnitPrice(userId) {
-    return getUserUnitPrice(userId);
-  },
-
-  // TODO(보안, 미해결 — 2026-08-04): data.userId/agencyId를 검증 없이 그대로 신뢰함.
-  // 로그인한 계정이면 임의 userId로 호출해 다른 대행사 명의로 접수 가능(그 대행사가 청구를 받음).
-  // super 롤(현재 'higherad')은 selectedBranch로 실제 다른 계정 명의 접수가 의도된 기능이라
-  // "무조건 자기 자신"으로 단순 고정은 안 됨 — RTDB 규칙에 UID↔username 검증을 추가하거나
-  // 서버(Cloud Run) 프록시 경유로 바꿔야 함. 메모리 project_higher_user_auth_gap.md 참조.
+  // 접수: userId/agencyId/unitPrice는 서버가 검증된 로그인 신원(super면 targetUsername) 기준으로
+  // 직접 결정 — 클라이언트가 보낸 값은 무시됨(이전엔 그대로 신뢰해 타 대행사 명의 위조 접수 가능했음).
   async addSlot(data) {
-    // 접수 시점 단가 스냅샷: 호출부가 미리 조회해 넘겼으면 재사용, 아니면 직접 조회
-    const unitPriceSnapshot = (data.unitPrice != null) ? data.unitPrice : await getUserUnitPrice(data.userId || '');
-
-    const newSlot = {
-      status:        'pending',
-      createdAt:     new Date().toISOString(),
-      agencyId:      data.agencyId      || '',
-      userId:        data.userId        || '',
-      startDate:     data.startDate     || '',
-      endDate:       data.endDate       || '',
-      storeName:     data.storeName     || '',
-      rankKeyword:   data.rankKeyword   || '',
-      url:           data.url           || '',
-      mid:           data.mid           || '',
-      memo:          data.memo          || '',
-      days:          Number(data.days)        || 0,
-      dailyTarget:   Number(data.dailyTarget) || 0,
-      unitPrice:     unitPriceSnapshot,
-    };
-    const newRef = await push(ref(db, PATHS.slots), newSlot);
-    const result = { ...newSlot, _key: newRef.key };
+    const result = await callUserApi('/user-add-slot', {
+      targetUsername: data.userId || undefined, // super 전용, member면 서버가 무시
+      startDate:      data.startDate     || '',
+      endDate:        data.endDate       || '',
+      storeName:      data.storeName     || '',
+      rankKeyword:    data.rankKeyword   || '',
+      url:            data.url           || '',
+      mid:            data.mid           || '',
+      memo:           data.memo          || '',
+      days:           Number(data.days)        || 0,
+      dailyTarget:    Number(data.dailyTarget) || 0,
+    });
     dispatch('ha:slots:updated');
     return result;
   },
@@ -178,9 +159,8 @@ const HA = {
   // ── 개별접수 텔레그램 알림 ───────────────────────────────
   async notifySingle(slot) {
     const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
-    // 슬롯 저장 단가 우선, 없으면 유저 DB 조회
-    let unitPrice = (slot.unitPrice != null && slot.unitPrice > 0) ? slot.unitPrice : 0;
-    if (!unitPrice) unitPrice = await getUserUnitPrice(slot.userId);
+    // 단가는 /user-add-slot 응답에 서버가 항상 채워서 옴(0원도 유효값이므로 재조회 폴백 불필요)
+    const unitPrice = slot.unitPrice || 0;
     const totalTarget = (slot.dailyTarget || 0) * (slot.days || 0);
     const amount      = totalTarget * unitPrice;
     const amountVat   = Math.round(amount * 1.1);
@@ -232,12 +212,16 @@ const HA = {
   // 회원 CRUD
   // ════════════════════════════════════════════════════════
 
-  // TODO(보안, 미해결 — 2026-08-04): ha/users 전체 노드를 필터 없이 반환. 화면에선 자기 것만
-  // 걸러 보여주지만 로그인한 아무 계정이나 devtools로 이 응답을 그대로 받아 전 대행사의 단가·
-  // 연락처·(레거시 계정은) 평문 비밀번호까지 열람 가능. 메모리 project_higher_user_auth_gap.md 참조.
-  async getUsers() {
-    const snapshot = await get(ref(db, PATHS.users));
-    return snapToArray(snapshot);
+  // 본인 프로필만(비밀번호 제외) — 대시보드 단가 조회 등에 사용.
+  async getMyProfile() {
+    const { user } = await callUserApi('/user-profile');
+    return user;
+  },
+
+  // super 전용 — 대리접수 대상 영업점 목록(회원만, 비밀번호 등 민감정보 제외).
+  async getBranchList() {
+    const { branches } = await callUserApi('/user-branch-list');
+    return branches;
   },
 
   async addUser(data) {
