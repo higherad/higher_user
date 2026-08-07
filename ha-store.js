@@ -129,7 +129,7 @@ const HA = {
   // 본인(userId=로그인 username) 캠페인만 서버가 필터링해 반환 — 다른 대행사 데이터는 안 옴.
   async getSlots() {
     const { slots } = await callUserApi('/user-slots');
-    return slots.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return slots.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   },
 
   // 접수: userId/agencyId/unitPrice는 서버가 검증된 로그인 신원(super면 targetUsername) 기준으로
