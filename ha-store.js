@@ -85,8 +85,16 @@ function snapToArray(snapshot) {
 
 // ── 내부 이벤트 버스 ─────────────────────────────────────────
 function dispatch(event) {
+  if (event === 'ha:slots:updated') _slotsCache = null; // 쓰기 이후엔 캐시 무효화
   window.dispatchEvent(new CustomEvent(event));
 }
+
+// ── getSlots() 캐시 ──────────────────────────────────────────
+// /user-slots가 매 호출마다 서버에서 ha/slots(6MB+) 전체를 읽어 필터링해서 돌려주는데,
+// 탭 전환·필터 변경·페이지네이션 클릭마다 캐싱 없이 새로 불려서 RTDB 트래픽이 불필요하게
+// 쌓였음 — 세션당 1회만 실제 호출하고 이후엔 캐시 재사용, 쓰기(addSlot/updateSlot) 후에는
+// 위 dispatch()가 자동으로 무효화한다(2026-08-11).
+let _slotsCache = null;
 
 // ════════════════════════════════════════════════════════════
 const HA = {
@@ -127,9 +135,14 @@ const HA = {
   // ════════════════════════════════════════════════════════
 
   // 본인(userId=로그인 username) 캠페인만 서버가 필터링해 반환 — 다른 대행사 데이터는 안 옴.
+  // 세션 캐시(_slotsCache) 재사용 — 동시에 여러 곳에서 부르면 진행 중인 요청 하나를 공유한다.
   async getSlots() {
-    const { slots } = await callUserApi('/user-slots');
-    return slots.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    if (!_slotsCache) {
+      _slotsCache = callUserApi('/user-slots').then(({ slots }) =>
+        slots.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      ).catch(err => { _slotsCache = null; throw err; });
+    }
+    return _slotsCache;
   },
 
   // 접수: userId/agencyId/unitPrice는 서버가 검증된 로그인 신원(super면 targetUsername) 기준으로
