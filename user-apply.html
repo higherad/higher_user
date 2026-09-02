@@ -691,6 +691,8 @@
     document.getElementById('tab-single').classList.toggle('active',  single);
     document.getElementById('tab-excel').classList.toggle('active',  !single);
   };
+  // 슈퍼(대리접수) 계정은 여러 건을 한 번에 처리하는 경우가 많아 엑셀 업로드를 기본 탭으로
+  if (isSuper) switchMode('excel');
 
   // ── 스텝 UI ───────────────────────────────────────────────
   function setStepUI(step) {
