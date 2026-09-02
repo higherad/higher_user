@@ -379,8 +379,8 @@
       <!-- 양식 다운로드 안내 -->
       <div class="template-box">
         <div class="t-text">
-          <strong>엑셀 양식 컬럼 순서</strong><br>
-          업체명 / URL / MID / 순위키워드 / 일 수 / 시작일 / 일 목표
+          <strong>엑셀 필수 컬럼</strong> <small style="color:var(--muted);font-weight:400">(순서 무관, 첫 행 항목명으로 자동 인식)</small><br>
+          업체명(상호명) / URL / MID(PID) / 순위키워드 / 일 수 / 시작일 / 일 목표
         </div>
         <button class="btn-template" onclick="downloadTemplate()">양식 다운로드</button>
       </div>
@@ -917,19 +917,44 @@
         const wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        if (!raw.length) { alert('빈 파일입니다.'); return; }
+
+        // 컬럼 위치를 고정 순서 대신 첫 행(헤더) 텍스트로 자동 인식 — 줄바꿈/공백/예시문구가 섞여
+        // 있어도("시작일\n예) 2002-01-31") 부분일치로 찾히도록 공백류를 다 지우고 매칭한다.
+        // 기존 정식 양식(업체명/URL/MID/순위키워드/일 수/시작일/일 목표)도 그대로 인식됨(하위호환).
+        const hdr = raw[0].map(h => String(h||'').replace(/\s+/g, ''));
+        const storeCol  = hdr.findIndex(h => /업체명|상호명/.test(h));
+        const urlCol    = hdr.findIndex(h => /url/i.test(h));
+        const midCol    = hdr.findIndex(h => /mid|pid/i.test(h));
+        const kwCol     = hdr.findIndex(h => /키워드/.test(h));
+        const daysCol   = hdr.findIndex(h => /일수/.test(h));
+        const targetCol = hdr.findIndex(h => /일목표/.test(h));
+        const startCol  = hdr.findIndex(h => /시작일/.test(h));
+        const missing = [];
+        if (storeCol  < 0) missing.push('업체명/상호명');
+        if (urlCol    < 0) missing.push('URL');
+        if (midCol    < 0) missing.push('MID/PID');
+        if (kwCol     < 0) missing.push('순위키워드');
+        if (daysCol   < 0) missing.push('일 수');
+        if (targetCol < 0) missing.push('일 목표');
+        if (startCol  < 0) missing.push('시작일');
+        if (missing.length) {
+          alert(`엑셀 첫 행(헤더)에서 다음 항목을 찾을 수 없습니다: ${missing.join(', ')}\n헤더에 해당 항목명이 포함돼 있는지 확인해주세요.`);
+          return;
+        }
 
         // 헤더 제거 후 데이터 행만
-        const dataRows = raw.slice(1).filter(r => r[0] || r[1]);
+        const dataRows = raw.slice(1).filter(r => r[storeCol] || r[urlCol]);
         excelRows = dataRows.map((r, i) => {
-          const storeName   = String(r[0] || '').trim();
-          const url         = normalizeUrlForAdmin(r[1]) || null;
-          const mid         = String(r[2] ?? '').trim();
-          const rankKeyword = String(r[3] ?? '').trim().replace(/\s+/g, '');
-          const daysRaw         = String(r[4] ?? '').trim();
+          const storeName   = String(r[storeCol] || '').trim();
+          const url         = normalizeUrlForAdmin(r[urlCol]) || null;
+          const mid         = String(r[midCol] ?? '').trim();
+          const rankKeyword = String(r[kwCol] ?? '').trim().replace(/\s+/g, '');
+          const daysRaw         = String(r[daysCol] ?? '').trim();
           const days            = daysRaw !== '' ? Number(daysRaw) : null;
-          const dailyTargetRaw  = String(r[6] ?? '').trim();
+          const dailyTargetRaw  = String(r[targetCol] ?? '').trim();
           const dailyTarget     = dailyTargetRaw !== '' ? Number(dailyTargetRaw) : null;
-          const startDate = normalizeDateCell(r[5]) || null;
+          const startDate = normalizeDateCell(r[startCol]) || null;
 
           // 종료일: days·startDate 모두 유효할 때만 계산
           let endDate = null;
