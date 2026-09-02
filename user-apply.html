@@ -1063,31 +1063,29 @@
     btn.disabled = true;
     btn.innerHTML = `<div style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:8px;vertical-align:middle"></div> 처리 중...`;
 
+    // 행마다 HA.addSlot이 /user-add-slot 프록시로 네트워크 왕복하므로, 순차 대기(for...of + await)면
+    // 건수만큼 지연이 그대로 쌓인다(50건이면 왕복 50번). 서로 독립된 요청이라 병렬로 한 번에 쏨.
+    const results = await Promise.allSettled(validRows.map(row => HA.addSlot({
+      agencyId:    excelAgencyId,
+      userId:      excelUserId,
+      storeName:   row.storeName,
+      rankKeyword: row.rankKeyword,
+      url:         row.url,
+      mid:         row.mid,
+      startDate:   row.startDate,
+      endDate:     row.endDate,
+      days:        row.days,
+      dailyTarget: row.dailyTarget,
+      memo:        '',
+    })));
+
     let success = 0;
     let fail = 0;
     const succeededSlots = [];
-
-    for (const row of validRows) {
-      try {
-        const result = await HA.addSlot({
-          agencyId:    excelAgencyId,
-          userId:      excelUserId,
-          storeName:   row.storeName,
-          rankKeyword: row.rankKeyword,
-          url:         row.url,
-          mid:         row.mid,
-          startDate:   row.startDate,
-          endDate:     row.endDate,
-          days:        row.days,
-          dailyTarget: row.dailyTarget,
-          memo:        '',
-        });
-        succeededSlots.push(result);
-        success++;
-      } catch {
-        fail++;
-      }
-    }
+    results.forEach(r => {
+      if (r.status === 'fulfilled') { succeededSlots.push(r.value); success++; }
+      else fail++;
+    });
 
     // 엑셀 일괄접수 알림 (전체 완료 후 1회)
     if (succeededSlots.length) HA.notifyExcelBatch(succeededSlots).catch(() => {});
