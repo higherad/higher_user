@@ -144,11 +144,10 @@ const HA = {
     return _slotsCache;
   },
 
-  // 접수: userId/agencyId/unitPrice는 서버가 검증된 로그인 신원(super면 targetUsername) 기준으로
-  // 직접 결정 — 클라이언트가 보낸 값은 무시됨(이전엔 그대로 신뢰해 타 대행사 명의 위조 접수 가능했음).
+  // 접수: userId/agencyId/unitPrice는 서버가 검증된 로그인 신원 기준으로 직접 결정 —
+  // 클라이언트가 보낸 값은 무시됨(이전엔 그대로 신뢰해 타 대행사 명의 위조 접수 가능했음).
   async addSlot(data) {
     const result = await callUserApi('/user-add-slot', {
-      targetUsername: data.userId || undefined, // super 전용, member면 서버가 무시
       startDate:      data.startDate     || '',
       endDate:        data.endDate       || '',
       storeName:      data.storeName     || '',
@@ -229,12 +228,6 @@ const HA = {
   async getMyProfile() {
     const { user } = await callUserApi('/user-profile');
     return user;
-  },
-
-  // super 전용 — 대리접수 대상 영업점 목록(회원만, 비밀번호 등 민감정보 제외).
-  async getBranchList() {
-    const { branches } = await callUserApi('/user-branch-list');
-    return branches;
   },
 
   async addUser(data) {

@@ -183,46 +183,13 @@
 <body>
 
 <header>
-  <div class="header-logo" id="header-logo">HIGHER <span>AD</span></div>
-  <div id="header-right-member" class="header-back" onclick="location.href='user-dashboard.html'">
+  <div class="header-logo">HIGHER <span>AD</span></div>
+  <div class="header-back" onclick="location.href='user-dashboard.html'">
     <i data-lucide="arrow-left" size="14"></i> <span>대시보드로 돌아가기</span>
-  </div>
-  <div id="header-right-super" class="header-back" style="display:none" onclick="doLogout()">
-    <i data-lucide="log-out" size="14"></i> <span>로그아웃</span>
   </div>
 </header>
 
 <div class="page-wrap">
-
-  <!-- 영업점 선택 (슈퍼유저 전용) -->
-  <div id="branch-selector-wrap" style="display:none;margin-bottom:20px;">
-    <div class="form-card" style="padding:24px 32px;border:2px solid var(--accent);background:rgba(16,185,129,.03);">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i data-lucide="building-2" size="18" style="color:var(--accent)"></i>
-        </div>
-        <div>
-          <div style="font-size:15px;font-weight:800;color:var(--navy);">영업점 선택</div>
-          <div style="font-size:12px;color:var(--text2);">캠페인을 접수할 영업점을 선택해주세요.</div>
-        </div>
-      </div>
-      <!-- 검색 가능한 커스텀 드롭다운 -->
-      <div id="branch-dropdown" style="position:relative;">
-        <div id="branch-input-wrap" style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:9px;background:#fff;transition:.2s;cursor:text;" onclick="openBranchDropdown()">
-          <i data-lucide="search" size="15" style="color:var(--muted);flex-shrink:0;margin-left:14px;"></i>
-          <input id="branch-search" type="text" placeholder="영업점명 또는 아이디 검색..."
-            style="flex:1;padding:11px 10px;border:none;outline:none;font-size:14px;font-family:inherit;color:var(--text);background:transparent;cursor:text;"
-            oninput="filterBranchList()" onfocus="openBranchDropdown()" autocomplete="off">
-          <div id="branch-clear-btn" style="display:none;padding:0 12px;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;" onclick="clearBranchSelection(event)">×</div>
-          <i data-lucide="chevron-down" id="branch-chevron" size="16" style="color:var(--muted);margin-right:12px;flex-shrink:0;transition:.2s;"></i>
-        </div>
-      </div>
-      <div id="branch-info" style="display:none;margin-top:12px;padding:10px 16px;background:#f1f5f9;border-radius:8px;font-size:13px;align-items:center;gap:8px;">
-        <i data-lucide="check-circle" size="14" style="color:var(--accent);flex-shrink:0"></i>
-        <span id="branch-info-text"></span>
-      </div>
-    </div>
-  </div>
 
   <!-- 탭 선택 -->
   <div class="tab-bar">
@@ -496,179 +463,6 @@
   const user = HA.getCurrentUser();
   if (!user || user.role === 'admin' || user.role === 'staff') location.href = 'index.html';
 
-  const isSuper = user.role === 'super';
-
-  // ── 슈퍼유저 UI 세팅 ──────────────────────────────────────
-  let selectedBranch = null; // { username, agency, unitPrice, _key }
-
-  // ── 커스텀 검색 드롭다운 ──────────────────────────────────
-  let branchMembers = []; // 전체 영업점 배열
-  let dropdownOpen  = false;
-
-  function setBranchInputFocusStyle(focused) {
-    const wrap = document.getElementById('branch-input-wrap');
-    wrap.style.borderColor  = focused ? 'var(--accent)' : 'var(--border)';
-    wrap.style.boxShadow    = focused ? '0 0 0 3px rgba(16,185,129,.1)' : 'none';
-    const chevron = document.getElementById('branch-chevron');
-    chevron.style.transform = focused ? 'rotate(180deg)' : 'rotate(0deg)';
-  }
-
-  function positionBranchList() {
-    const wrap = document.getElementById('branch-input-wrap');
-    const list = document.getElementById('branch-list');
-    const rect = wrap.getBoundingClientRect();
-    list.style.top   = (rect.bottom + 4) + 'px';
-    list.style.left  = rect.left + 'px';
-    list.style.width = rect.width + 'px';
-  }
-
-  window.openBranchDropdown = function() {
-    if (dropdownOpen) return;
-    dropdownOpen = true;
-    setBranchInputFocusStyle(true);
-    renderBranchList(document.getElementById('branch-search').value);
-    positionBranchList();
-    document.getElementById('branch-list').style.display = 'block';
-    document.getElementById('branch-search').focus();
-  };
-
-  window.filterBranchList = function() {
-    renderBranchList(document.getElementById('branch-search').value);
-  };
-
-  // ── 초성 검색 헬퍼 ───────────────────────────────────────
-  const CHOSEONG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-  function toChoseong(str) {
-    return [...str].map(ch => {
-      const code = ch.charCodeAt(0);
-      if (code >= 0xAC00 && code <= 0xD7A3)
-        return CHOSEONG[Math.floor((code - 0xAC00) / 588)];
-      return ch;
-    }).join('');
-  }
-  function matchSearch(target, q) {
-    const t = target.toLowerCase();
-    return t.includes(q) || toChoseong(t).includes(q);
-  }
-
-  function renderBranchList(query) {
-    const q = query.trim().toLowerCase();
-    const filtered = q
-      ? branchMembers.filter(u =>
-          matchSearch(u.agency   || '', q) ||
-          matchSearch(u.username || '', q)
-        )
-      : branchMembers;
-
-    const inner   = document.getElementById('branch-list-inner');
-    const noResult= document.getElementById('branch-no-result');
-
-    if (!filtered.length) {
-      inner.innerHTML = '';
-      noResult.style.display = 'block';
-      return;
-    }
-    noResult.style.display = 'none';
-    inner.innerHTML = filtered.map(u => {
-      const label = u.agency || u.username;
-      const sub   = u.username;
-      const isSelected = selectedBranch && selectedBranch.username === u.username;
-      return `<div class="branch-option${isSelected ? ' selected' : ''}"
-                   data-key="${u.username}"
-                   onclick="selectBranch('${u.username}')"
-                   style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center;transition:.15s;${isSelected?'background:rgba(16,185,129,.08);color:var(--accent);font-weight:700;':''}">
-                <span>${label} <span style="color:var(--muted);font-weight:400;font-size:12px">(${sub})</span></span>
-                ${isSelected ? '<i data-lucide="check" size="13"></i>' : ''}
-              </div>`;
-    }).join('');
-    lucide.createIcons();
-  }
-
-  window.selectBranch = function(username) {
-    selectedBranch = branchMembers.find(u => u.username === username) || null;
-    closeBranchDropdown();
-
-    const infoEl   = document.getElementById('branch-info');
-    const infoText = document.getElementById('branch-info-text');
-    const searchEl = document.getElementById('branch-search');
-    const clearBtn = document.getElementById('branch-clear-btn');
-
-    if (selectedBranch) {
-      const label = selectedBranch.agency || selectedBranch.username;
-      searchEl.value            = `${label}  (${selectedBranch.username})`;
-      searchEl.style.color      = 'var(--text)';
-      clearBtn.style.display    = 'block';
-      infoEl.style.display      = 'flex';
-      infoText.innerHTML        = `<strong>${label}</strong> 으로 접수됩니다 &nbsp;·&nbsp; 단가: <strong>${(selectedBranch.unitPrice || 0).toLocaleString()}원</strong>`;
-    }
-  };
-
-  window.clearBranchSelection = function(e) {
-    e.stopPropagation();
-    selectedBranch = null;
-    document.getElementById('branch-search').value      = '';
-    document.getElementById('branch-clear-btn').style.display = 'none';
-    document.getElementById('branch-info').style.display      = 'none';
-    setBranchInputFocusStyle(false);
-  };
-
-  function closeBranchDropdown() {
-    dropdownOpen = false;
-    document.getElementById('branch-list').style.display = 'none';
-    setBranchInputFocusStyle(false);
-  }
-
-  // 외부 클릭 시 닫기
-  document.addEventListener('click', e => {
-    const dropdown = document.getElementById('branch-dropdown');
-    const list     = document.getElementById('branch-list');
-    if (!dropdown.contains(e.target) && !list.contains(e.target)) {
-      closeBranchDropdown();
-    }
-  });
-
-  // 스크롤·리사이즈 시 위치 재계산
-  window.addEventListener('scroll', () => { if (dropdownOpen) positionBranchList(); }, true);
-  window.addEventListener('resize', () => { if (dropdownOpen) positionBranchList(); });
-
-  // 옵션 위 hover 스타일 (동적이라 이벤트 위임)
-  document.getElementById('branch-list-inner').addEventListener('mouseover', e => {
-    const opt = e.target.closest('.branch-option');
-    if (opt && !opt.classList.contains('selected')) opt.style.background = '#f8fafc';
-  });
-  document.getElementById('branch-list-inner').addEventListener('mouseout', e => {
-    const opt = e.target.closest('.branch-option');
-    if (opt && !opt.classList.contains('selected')) opt.style.background = '';
-  });
-
-  if (isSuper) {
-    // 헤더
-    document.getElementById('header-logo').style.cursor = 'default';
-    document.getElementById('header-right-member').style.display = 'none';
-    document.getElementById('header-right-super').style.display  = 'flex';
-
-    // 영업점 선택 박스 표시
-    document.getElementById('branch-selector-wrap').style.display = 'block';
-
-    // 완료 화면 대시보드 버튼 숨김
-    document.getElementById('single-done-dashboard-btn').style.display = 'none';
-    document.getElementById('excel-done-dashboard-btn').style.display  = 'none';
-
-    // 회원 목록 로드 (서버가 이미 회원만+비밀번호 등 제외하고 필터링해서 줌)
-    try {
-      const branches = await HA.getBranchList();
-      branchMembers = branches
-        .sort((a, b) => (a.agency || a.username).localeCompare(b.agency || b.username, 'ko'));
-    } catch(e) {
-      console.warn('영업점 목록 로드 실패', e);
-    }
-  }
-
-  window.doLogout = function() {
-    HA.logout();
-    location.href = 'index.html';
-  };
-
   const today = new Date();
   const fmt = d => {
     const yyyy = d.getFullYear();
@@ -691,8 +485,6 @@
     document.getElementById('tab-single').classList.toggle('active',  single);
     document.getElementById('tab-excel').classList.toggle('active',  !single);
   };
-  // 슈퍼(대리접수) 계정은 여러 건을 한 번에 처리하는 경우가 많아 엑셀 업로드를 기본 탭으로
-  if (isSuper) switchMode('excel');
 
   // ── 스텝 UI ───────────────────────────────────────────────
   function setStepUI(step) {
@@ -835,20 +627,12 @@
 
   // ── 단건 제출 ─────────────────────────────────────────────
   window.submitSingle = async () => {
-    if (isSuper && !selectedBranch) {
-      alert('영업점을 먼저 선택해주세요.');
-      return;
-    }
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
     btn.innerHTML = '처리 중...';
-    const targetAgencyId = isSuper ? (selectedBranch.agency || selectedBranch.username) : (user.agency || user.username);
-    const targetUserId   = isSuper ? selectedBranch.username : user.username;
     try {
       const normalizedUrl = normalizeUrlForAdmin(document.getElementById('f-url').value);
       const result = await HA.addSlot({
-        agencyId:      targetAgencyId,
-        userId:        targetUserId,
         storeName:     document.getElementById('f-storeName').value,
         rankKeyword:   document.getElementById('f-rankKeyword').value.replace(/\s+/g, ''),
         url:           normalizedUrl,
@@ -1055,16 +839,9 @@
 
   // ── 일괄 제출 ─────────────────────────────────────────────
   window.submitExcel = async () => {
-    if (isSuper && !selectedBranch) {
-      alert('영업점을 먼저 선택해주세요.');
-      return;
-    }
     if (excelRows.some(r => !r.valid)) return alert('오류가 있는 행이 있습니다. 오류를 수정한 후 다시 업로드해주세요.');
     const validRows = excelRows.filter(r => r.valid);
     if (!validRows.length) return alert('접수 가능한 데이터가 없습니다.');
-
-    const excelAgencyId = isSuper ? (selectedBranch.agency || selectedBranch.username) : (user.agency || user.username);
-    const excelUserId   = isSuper ? selectedBranch.username : user.username;
 
     const btn = document.getElementById('excel-submit-btn');
     btn.disabled = true;
@@ -1076,8 +853,6 @@
     // 행 인덱스만큼 createdAt을 미리 어긋나게 만들어 보내 정렬 순서를 엑셀 순서에 고정한다.
     const excelBaseTs = Date.now();
     const results = await Promise.allSettled(validRows.map((row, i) => HA.addSlot({
-      agencyId:    excelAgencyId,
-      userId:      excelUserId,
       storeName:   row.storeName,
       rankKeyword: row.rankKeyword,
       url:         row.url,
@@ -1162,10 +937,5 @@
   lucide.createIcons();
 </script>
 
-<!-- 영업점 드롭다운 리스트 — body 직속으로 위치해야 transform 부모 영향 안 받음 -->
-<div id="branch-list" style="display:none;position:fixed;background:#fff;border:1.5px solid var(--accent);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:9999;max-height:240px;overflow-y:auto;">
-  <div id="branch-list-inner"></div>
-  <div id="branch-no-result" style="display:none;padding:14px 16px;font-size:13px;color:var(--muted);text-align:center;">검색 결과가 없습니다.</div>
-</div>
 </body>
 </html>
