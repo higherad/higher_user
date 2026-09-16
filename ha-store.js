@@ -41,12 +41,9 @@ const CLOUD_RUN = 'https://higherad-auto-938928195180.asia-northeast3.run.app';
 
 // ── DB 경로 상수 ─────────────────────────────────────────────
 const PATHS = {
-  slots:           'ha/slots',
-  users:           'ha/users',
-  notices:         'ha/notices',
-  paid:            'ha/paid_slots',
-  refunds:         'ha/refunds',
-  settleSnapshots: 'ha/settle_snapshots',
+  slots:   'ha/slots',
+  users:   'ha/users',
+  notices: 'ha/notices',
 };
 
 // higher_user 포털 전용 Cloud Run 프록시 호출 — userId/agencyId/unitPrice 등 신원 관련 값은
@@ -94,6 +91,17 @@ function dispatch(event) {
 // 세션당 1회만 실제 호출하고 이후엔 캐시 재사용, 쓰기(addSlot/updateSlot) 후에는
 // 위 dispatch()가 자동으로 무효화한다.
 let _slotsCache = null;
+
+// getPaidSet/getRefunds/getAllSettleSnapshots 공용 캐시 — /user-settle-data 하나로 세 값을 한 번에 받음
+// (2026-09-17, ha/paid_slots·refunds·settle_snapshots는 스태프 전용 RTDB 규칙이라 고객 계정은 클라이언트
+// SDK로 직접 못 읽어 Permission denied가 나던 걸 서버 프록시로 교체)
+let _settleDataCache = null;
+async function getSettleData() {
+  if (!_settleDataCache) {
+    _settleDataCache = callUserApi('/user-settle-data').catch(err => { _settleDataCache = null; throw err; });
+  }
+  return _settleDataCache;
+}
 
 // ════════════════════════════════════════════════════════════
 const HA = {
@@ -295,9 +303,8 @@ const HA = {
   // ════════════════════════════════════════════════════════
 
   async getPaidSet() {
-    const snapshot = await get(ref(db, PATHS.paid));
-    if (!snapshot.exists()) return new Set();
-    return new Set(Object.keys(snapshot.val()));
+    const { paid } = await getSettleData();
+    return new Set(paid || []);
   },
 
   // ════════════════════════════════════════════════════════
@@ -305,9 +312,8 @@ const HA = {
   // ════════════════════════════════════════════════════════
 
   async getRefunds() {
-    const snapshot = await get(ref(db, PATHS.refunds));
-    if (!snapshot.exists()) return {};
-    return snapshot.val();
+    const { refunds } = await getSettleData();
+    return refunds || {};
   },
 
   // ════════════════════════════════════════════════════════
@@ -315,26 +321,13 @@ const HA = {
   // ════════════════════════════════════════════════════════
 
   async saveSettleSnapshot(snapKey, data, force = false) {
-    const path = `${PATHS.settleSnapshots}/${snapKey}`;
-    if (!force) {
-      const existing = await get(ref(db, path));
-      if (existing.exists()) return;
-    }
-    await set(ref(db, path), { ...data, savedAt: new Date().toISOString() });
+    await callUserApi('/user-save-settle-snapshot', { snapKey, data, force });
+    _settleDataCache = null; // 방금 저장한 스냅샷이 다음 조회에 반영되도록 무효화
   },
 
   async getAllSettleSnapshots() {
-    const snap = await get(ref(db, PATHS.settleSnapshots));
-    if (!snap.exists()) return {};
-    const result = {};
-    snap.forEach(node => {
-      const key  = node.key;
-      const data = node.val();
-      if (!result[key] || (data.confirmedAt && data.confirmedAt > (result[key].confirmedAt||''))) {
-        result[key] = data;
-      }
-    });
-    return result;
+    const { snapshots } = await getSettleData();
+    return snapshots || {};
   },
 
 };
