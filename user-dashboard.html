@@ -453,13 +453,15 @@
     const end   = new Date(endDate); end.setHours(0,0,0,0);
     return Math.ceil((end - today) / 86400000);
   }
-  // DB status가 active여도 종료일이 지났으면 expired, 시작일이 안 됐으면 reserved로 처리
+  // DB status가 active/split이면 종료일이 지났으면 expired, 시작일이 안 됐으면 reserved, 그 외엔 진행중으로 처리
+  // split(예약 분할 처리 중)도 화면에서는 active와 동일하게 날짜 기준으로 진행중/예약/종료를 판정 — DB는 안 바뀜(순수 표시용)
   function effectiveStatus(s) {
-    if (s.status === 'active') {
+    if (s.status === 'active' || s.status === 'split') {
       const today = new Date(); today.setHours(0,0,0,0);
       const end   = new Date(s.endDate); end.setHours(0,0,0,0);
       if (end < today) return 'expired';
       if (!hasStarted(s)) return 'reserved';
+      return 'active';
     }
     return s.status;
   }
@@ -864,6 +866,7 @@
     if (!settleList) return;
     settleList.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">불러오는 중...</div>';
 
+    try {
     const now      = new Date();
     const yyyy = now.getFullYear();
     const mo = String(now.getMonth()+1).padStart(2,'0');
@@ -977,6 +980,10 @@
     };
 
     renderSettlePage();
+    } catch (e) {
+      console.error('정산 데이터 로드 실패:', e);
+      settleList.innerHTML = `<div style="padding:60px;text-align:center;color:var(--danger)">정산 데이터를 불러오지 못했습니다.<br><span style="font-size:12px;color:var(--muted)">${e.message||''}</span></div>`;
+    }
   };
 
   // ── 프로필 정보 변경 모달 ────────────────────────────────────
