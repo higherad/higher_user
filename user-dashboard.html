@@ -702,7 +702,7 @@
       <div class="notice-item" onclick="openNotice('${n._key}')">
         ${n.pinned ? '<div class="pin-dot"></div>' : '<div class="normal-dot"></div>'}
         <span class="notice-title">${n.title}</span>
-        <span class="notice-meta">${n.date.slice(0,10)} · 조회 ${n.views}</span>
+        <span class="notice-meta">${n.date.slice(0,10)}</span>
       </div>`).join('');
   }
 
@@ -710,7 +710,6 @@
     const notices = await HA.getNotices();
     const n = notices.find(x=>x._key===id);
     if (!n) return;
-    HA.addNoticeView(n._key).catch(() => {});
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `

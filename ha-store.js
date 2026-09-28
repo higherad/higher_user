@@ -278,10 +278,6 @@ const HA = {
     );
   },
 
-  // 공지 조회수 +1(서버 경유 — 회원 계정의 ha/notices 직접 쓰기는 규칙으로 막힘)
-  async addNoticeView(key) {
-    await callUserApi('/user-notice-view', { key });
-  },
 
   // ════════════════════════════════════════════════════════
   // 정산 상태
