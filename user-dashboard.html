@@ -496,18 +496,8 @@
       HA.getNotices(),
     ]);
 
-    // ── 종료일 지난 active 슬롯 Firebase 즉시 업데이트 (세션당 1회) ──
-    if (!_expiredChecked) {
-      _expiredChecked = true;
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const toExpire = allSlots.filter(s =>
-        s.userId === user.username && s.status === 'active' && s.endDate && s.endDate < todayStr
-      );
-      if (toExpire.length) {
-        await Promise.all(toExpire.map(s => HA.updateSlot(s._key, { status: 'expired' })));
-        toExpire.forEach(s => { s.status = 'expired'; });
-      }
-    }
+    // 종료일 지난 active의 expired 전환은 서버(higherad-auto /expire-slots, 매일 00:05)가 처리 —
+    // 화면은 effectiveStatus가 종료일 기준으로 '종료'를 표시하므로 브라우저에서 쓰지 않음
 
     const mySlots = allSlots.filter(s => s.userId === user.username && s.status !== 'deleted');
     const active  = mySlots.filter(s => effectiveStatus(s) === 'active');
@@ -582,7 +572,6 @@
   // ── 내 캠페인 전체 렌더 ───────────────────────────────────────
   let slotsPage = 1;
   const SLOTS_PER_PAGE = 20;
-  let _expiredChecked = false;
 
   window.renderMySlots = async function(page) {
     slotsPage = page ?? 1;
@@ -721,7 +710,7 @@
     const notices = await HA.getNotices();
     const n = notices.find(x=>x._key===id);
     if (!n) return;
-    HA.updateNotice(n._key, { views: (n.views||0)+1 });
+    HA.addNoticeView(n._key).catch(() => {});
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `

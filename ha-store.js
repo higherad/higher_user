@@ -4,7 +4,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getDatabase, ref,
-  set as _set, get as _get, push as _push, update as _update, remove as _remove }
+  get as _get }
   from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword }
   from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
@@ -31,10 +31,6 @@ const auth = getAuth(app);
 const authReady = auth.authStateReady();
 
 async function get(r)        { await authReady; return _get(r); }
-async function set(r, v)     { await authReady; return _set(r, v); }
-async function push(r, v)    { await authReady; return _push(r, v); }
-async function update(r, v)  { await authReady; return _update(r, v); }
-async function remove(r)     { await authReady; return _remove(r); }
 
 // ── Cloud Run 엔드포인트 ─────────────────────────────────────
 const CLOUD_RUN = 'https://higherad-auto-938928195180.asia-northeast3.run.app';
@@ -171,8 +167,10 @@ const HA = {
     return result;
   },
 
+  // 대기(pending) 캠페인 수정 — 서버가 본인 소유·상태·허용 필드(시작일/종료일/일수/일목표/메모)를 확인하고 씀
+  // (회원 계정의 ha/slots 직접 쓰기는 RTDB 규칙으로 막혀 있음)
   async updateSlot(key, patch) {
-    await update(ref(db, `${PATHS.slots}/${key}`), patch);
+    await callUserApi('/user-update-slot', { key, ...patch });
     dispatch('ha:slots:updated');
   },
 
@@ -254,31 +252,17 @@ const HA = {
       throw e;
     }
 
-    // RTDB 프로필 저장 (password 제외)
-    const newUser = {
-      username,
-      agency:    agencyName,
-      agencyId:  agencyName,
-      role:      'member',
-      unitPrice: Number(data.unitPrice) || 0,
-      memo:      data.memo || '',
-      createdAt: new Date().toISOString().slice(0, 10),
-      approved:  data.approved !== undefined ? data.approved : false,
-    };
-    const newRef = await push(ref(db, PATHS.users), newUser);
+    // RTDB 프로필은 서버가 생성(role=member·단가 0·미승인 고정, 회원 계정의 ha/users 직접 쓰기는 규칙으로 막힘)
+    const newUser = await callUserApi('/user-register', { agency: agencyName });
     await signOut(auth); // 가입 후 자동 로그인 방지 (관리자 승인 대기)
     dispatch('ha:users:updated');
-    return { ...newUser, _key: newRef.key };
+    return newUser;
   },
 
+  // 비밀번호는 Firebase Auth에서 직접 변경, 업체명은 서버 경유(본인 레코드의 agency/agencyId만 수정 가능)
   async updateUser(key, patch) {
-    if (patch.password) {
-      await updatePassword(auth.currentUser, patch.password);
-      const { password: _, ...rtdbPatch } = patch;
-      await update(ref(db, `${PATHS.users}/${key}`), rtdbPatch);
-    } else {
-      await update(ref(db, `${PATHS.users}/${key}`), patch);
-    }
+    if (patch.password) await updatePassword(auth.currentUser, patch.password);
+    if (patch.agency !== undefined) await callUserApi('/user-update-profile', { agency: patch.agency });
     dispatch('ha:users:updated');
   },
 
@@ -294,8 +278,9 @@ const HA = {
     );
   },
 
-  async updateNotice(key, patch) {
-    await update(ref(db, `${PATHS.notices}/${key}`), patch);
+  // 공지 조회수 +1(서버 경유 — 회원 계정의 ha/notices 직접 쓰기는 규칙으로 막힘)
+  async addNoticeView(key) {
+    await callUserApi('/user-notice-view', { key });
   },
 
   // ════════════════════════════════════════════════════════
