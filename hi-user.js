@@ -1,5 +1,5 @@
 /**
- * HI-USER.JS — 회원 사이트 데이터 접근 (hi/ 구조, 2026-10 개편 — 캠페인·회원·정산은 higherad-auto /user-* 경유)
+ * HI-USER.JS — 회원 사이트 데이터 접근 (hi/ 구조 — 캠페인·회원·정산은 higherad-auto /user-* 경유)
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
@@ -36,15 +36,13 @@ async function get(r)        { await authReady; return _get(r); }
 const CLOUD_RUN = 'https://higherad-auto-938928195180.asia-northeast3.run.app';
 
 // ── DB 경로 상수 ─────────────────────────────────────────────
-// 캠페인·회원·정산은 서버(/user-*)만 거침 — 브라우저가 직접 읽는 건 공지뿐(hi/ 개편 2026-10)
+// 캠페인·회원·정산은 서버(/user-*)만 거침 — 브라우저가 직접 읽는 건 공지뿐
 const PATHS = {
   notices: 'hi/notices',
 };
 
 // higher_user 포털 전용 Cloud Run 프록시 호출 — userId/agencyId/unitPrice 등 신원 관련 값은
-// 클라이언트가 보낸 값을 신뢰하지 않고 서버가 ID 토큰으로 검증해 직접 결정한다.
-// (과거 버전은 ha/slots·ha/users 전체 노드를 클라이언트에서 직접 읽어 userId 위조 및 전체
-//  고객 데이터(평문 비밀번호 포함) 노출이 가능했음 — project_higher_user_auth_gap.md 참조)
+// 클라이언트가 보낸 값을 신뢰하지 않고 서버가 ID 토큰으로 검증해 직접 결정한다(userId 위조·타 고객 데이터 노출 방지).
 async function callUserApi(path, body) {
   await auth.authStateReady();
   const user = auth.currentUser;
@@ -82,14 +80,12 @@ function dispatch(event) {
 }
 
 // ── getSlots() 캐시 ──────────────────────────────────────────
-// /user-slots는 매 호출마다 서버에서 ha/slots(6MB+) 전체를 읽어 필터링해 돌려주므로
-// 세션당 1회만 실제 호출하고 이후엔 캐시 재사용, 쓰기(addSlot/updateSlot) 후에는
+// /user-slots는 서버 왕복이라 세션당 1회만 실제 호출하고 이후엔 캐시 재사용, 쓰기(addSlot/updateSlot) 후에는
 // 위 dispatch()가 자동으로 무효화한다.
 let _slotsCache = null;
 
 // getPaidSet/getRefunds/getAllSettleSnapshots 공용 캐시 — /user-settle-data 하나로 세 값을 한 번에 받음
-// (2026-09-17, ha/paid_slots·refunds·settle_snapshots는 스태프 전용 RTDB 규칙이라 고객 계정은 클라이언트
-// SDK로 직접 못 읽어 Permission denied가 나던 걸 서버 프록시로 교체)
+// (입금·환불·스냅샷은 스태프 전용 RTDB 규칙이라 회원 계정은 직접 못 읽음 — 서버가 본인 것만 걸러 줌)
 let _settleDataCache = null;
 async function getSettleData() {
   if (!_settleDataCache) {
@@ -111,8 +107,7 @@ const HA = {
     const email = `${username}@higherad.app`;
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      // 프로필은 서버(/user-profile)에서 본인 것만 받아옴 — ha/users 전체 노드를 클라이언트가
-      // 직접 읽지 않음(비밀번호 필드 포함 전체 고객 데이터 노출 방지)
+      // 프로필은 서버(/user-profile)에서 본인 것만 받아옴(비밀번호 필드 포함 전체 고객 데이터 노출 방지)
       const { user: profile } = await callUserApi('/user-profile');
       if (profile.approved === false) {
         await signOut(auth);
@@ -148,7 +143,7 @@ const HA = {
   },
 
   // 접수: userId/agencyId/unitPrice는 서버가 검증된 로그인 신원 기준으로 직접 결정 —
-  // 클라이언트가 보낸 값은 무시됨(이전엔 그대로 신뢰해 타 대행사 명의 위조 접수 가능했음).
+  // 클라이언트가 보낸 값은 무시됨(타 대행사 명의 위조 접수 방지).
   async addSlot(data) {
     const result = await callUserApi('/user-add-slot', {
       startDate:      data.startDate     || '',
@@ -167,7 +162,7 @@ const HA = {
   },
 
   // 대기(pending) 캠페인 수정 — 서버가 본인 소유·상태·허용 필드(시작일/종료일/일수/일목표/메모)를 확인하고 씀
-  // (회원 계정의 ha/slots 직접 쓰기는 RTDB 규칙으로 막혀 있음)
+  // (회원 계정의 RTDB 직접 쓰기는 규칙으로 막혀 있음)
   async updateSlot(key, patch) {
     await callUserApi('/user-update-slot', { key, ...patch });
     dispatch('ha:slots:updated');
@@ -251,7 +246,7 @@ const HA = {
       throw e;
     }
 
-    // RTDB 프로필은 서버가 생성(role=member·단가 0·미승인 고정, 회원 계정의 ha/users 직접 쓰기는 규칙으로 막힘)
+    // RTDB 프로필은 서버가 생성(role=member·단가 0·미승인 고정, 회원 계정의 RTDB 직접 쓰기는 규칙으로 막힘)
     const newUser = await callUserApi('/user-register', { agency: agencyName });
     await signOut(auth); // 가입 후 자동 로그인 방지 (관리자 승인 대기)
     dispatch('ha:users:updated');
