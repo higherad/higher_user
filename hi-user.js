@@ -1,5 +1,5 @@
 /**
- * HA-STORE.JS — Firebase Realtime Database 버전 (유저 사이트 전용)
+ * HI-USER.JS — 회원 사이트 데이터 접근 (hi/ 구조, 2026-10 개편 — 캠페인·회원·정산은 higherad-auto /user-* 경유)
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
@@ -36,10 +36,9 @@ async function get(r)        { await authReady; return _get(r); }
 const CLOUD_RUN = 'https://higherad-auto-938928195180.asia-northeast3.run.app';
 
 // ── DB 경로 상수 ─────────────────────────────────────────────
+// 캠페인·회원·정산은 서버(/user-*)만 거침 — 브라우저가 직접 읽는 건 공지뿐(hi/ 개편 2026-10)
 const PATHS = {
-  slots:   'ha/slots',
-  users:   'ha/users',
-  notices: 'ha/notices',
+  notices: 'hi/notices',
 };
 
 // higher_user 포털 전용 Cloud Run 프록시 호출 — userId/agencyId/unitPrice 등 신원 관련 값은
