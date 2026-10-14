@@ -877,8 +877,7 @@
     // 정산 대상 — 관리자 정산관리(higher/hi-store.js isBillable)와 같은 기준: 재접수 제외, 강제종료·예약 포함
     // (재접수·강제종료·예약 분할은 서버 /user-slots가 이미 빼거나 active로 바꿔 보내지만, 기준 사본은 원본과 똑같이 둠)
     const BILLABLE = new Set(['active', 'accepted', 'expired', 'pending', 'split', 'force_stopped']);
-    const mySlots = allSlots.filter(s => s.userId === user.username && !s.isRequeue &&
-      (BILLABLE.has(s.status) || (s.origin === 'kp' && s.status && s.status !== 'deleted')));
+    const mySlots = allSlots.filter(s => s.userId === user.username && !s.isRequeue && BILLABLE.has(s.status));
 
     function safe(str) { return (str||'').replace(/[.#$[\]]/g, '_'); }
     function getSlotPrice(s) {
