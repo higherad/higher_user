@@ -883,7 +883,8 @@
     function getSlotPrice(s) {
       return (s.unitPrice != null && s.unitPrice !== '' && s.unitPrice > 0) ? s.unitPrice : unitPrice;
     }
-    function getSlotAmount(s) { return (s.dailyTarget||0) * (s.days||0) * getSlotPrice(s); }
+    // 유입플 업체 분류된 캠페인은 서버가 계산한 정산 금액(billAmount, 관리자 정산관리와 같은 규칙)
+    function getSlotAmount(s) { return s.billAmount != null ? s.billAmount : (s.dailyTarget||0) * (s.days||0) * getSlotPrice(s); }
     function getSlotTarget(s) { return (s.dailyTarget||0) * (s.days||0); }
     function getGroupRefund(timeKey, agencyId, userId) {
       const key = `${safe(timeKey)}__${safe(agencyId)}__${safe(userId)}`;
